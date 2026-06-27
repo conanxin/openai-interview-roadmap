@@ -58,6 +58,16 @@ npm run build:gh-pages
 npx gh-pages -d dist
 ```
 
+### 网络不稳定时的手动部署方式
+
+如果 npm registry 不稳定，导致 `npx gh-pages -d dist` 超时，可以使用不依赖 `gh-pages` npm 包的手动部署脚本：
+
+```bash
+npm run deploy:manual
+```
+
+脚本会先运行 `npm run build:gh-pages`，再把 `dist/` 初始化为临时 `gh-pages` 分支，并强制推送到当前仓库的 `origin`。
+
 ## 部署到腾讯云服务器
 
 默认构建命令即可：

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:gh-pages": "vite build --base=/openai-interview-roadmap/",
+    "deploy:manual": "bash scripts/deploy-gh-pages.sh",
     "lint": "oxlint",
     "preview": "vite preview"
   },
