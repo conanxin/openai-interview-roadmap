@@ -17,17 +17,31 @@ const navItems = [
   { label: '12 周计划', href: '#plan' },
 ]
 
-const detailNavItems = [
+const baseDetailNavItems = [
   { id: 'positioning', label: '资源定位' },
   { id: 'goals', label: '学习目标' },
   { id: 'guide', label: '中文导读' },
+  { id: 'lecture', label: '章节讲义', field: 'lectureSections' },
+  { id: 'diagram', label: '概念结构图', field: 'structureDiagram' },
+  { id: 'pseudocode', label: '最小伪代码', field: 'pseudocode' },
   { id: 'concepts', label: '核心概念' },
   { id: 'glossary', label: '术语表' },
   { id: 'notes', label: '学习笔记' },
   { id: 'exercises', label: '代码练习' },
+  { id: 'templates', label: '答题模板', field: 'interviewTemplates' },
   { id: 'questions', label: '面试问题' },
+  { id: 'self-test', label: '自测题', field: 'selfTest' },
   { id: 'outputs', label: '学习产出' },
+  { id: 'completion', label: '完成清单', field: 'completionChecklist' },
 ]
+
+function hasItems(items) {
+  return Array.isArray(items) && items.length > 0
+}
+
+function getDetailNavItems(resource) {
+  return baseDetailNavItems.filter((item) => !item.field || hasItems(resource[item.field]))
+}
 
 function getResourceSlugFromHash() {
   const match = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
@@ -89,9 +103,9 @@ function BulletList({ items }) {
   )
 }
 
-function DetailSection({ title, children }) {
+function DetailSection({ id, title, children }) {
   return (
-    <section className="detail-section">
+    <section id={id} className="detail-section">
       <h2>{title}</h2>
       {children}
     </section>
@@ -106,6 +120,86 @@ function TermTable({ terms }) {
           <dt>{item.term}</dt>
           <dd>{item.explanation}</dd>
         </div>
+      ))}
+    </div>
+  )
+}
+
+function LectureSections({ sections }) {
+  return (
+    <div className="lecture-list">
+      {sections.map((section, index) => (
+        <article className="lecture-card" key={section.title}>
+          <span>{String(index + 1).padStart(2, '0')}</span>
+          <h3>{section.title}</h3>
+          {section.paragraphs.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function StructureDiagram({ lines }) {
+  return (
+    <div className="structure-diagram" role="img" aria-label="文字概念结构图">
+      {lines.map((line) => (
+        <div key={line}>{line}</div>
+      ))}
+    </div>
+  )
+}
+
+function PseudocodeBlocks({ blocks }) {
+  return (
+    <div className="pseudocode-list">
+      {blocks.map((block) => (
+        <article className="code-card" key={block.title}>
+          <h3>{block.title}</h3>
+          <pre>
+            <code>{block.code}</code>
+          </pre>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function InterviewTemplates({ templates }) {
+  return (
+    <div className="template-list">
+      {templates.map((item) => (
+        <article className="template-card" key={item.question}>
+          <h3>{item.question}</h3>
+          <p>{item.answer}</p>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function SelfTest({ items }) {
+  return (
+    <div className="self-test-list">
+      {items.map((item) => (
+        <article className="self-test-card" key={item.question}>
+          <h3>{item.question}</h3>
+          <p>{item.answer}</p>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function CompletionChecklist({ items }) {
+  return (
+    <div className="completion-list">
+      {items.map((item) => (
+        <label key={item} className="completion-item">
+          <input type="checkbox" />
+          <span>{item}</span>
+        </label>
       ))}
     </div>
   )
@@ -326,6 +420,8 @@ function ResourceDetail({ resource }) {
     )
   }
 
+  const detailNavItems = getDetailNavItems(resource)
+
   return (
     <main className="detail-page">
       <a className="back-link" href="#top">
@@ -357,64 +453,100 @@ function ResourceDetail({ resource }) {
         </aside>
 
         <div className="detail-content">
-          <DetailSection title="资源定位：这份资料解决什么面试能力缺口">
-            <p id="positioning">{resource.positioning}</p>
+          <DetailSection id="positioning" title="资源定位：这份资料解决什么面试能力缺口">
+            <p>{resource.positioning}</p>
           </DetailSection>
 
-          <DetailSection title="学习目标：学完应该掌握什么">
-            <div id="goals">
+          <DetailSection id="goals" title="学习目标：学完应该掌握什么">
+            <div>
               <BulletList items={resource.goals} />
             </div>
           </DetailSection>
 
-          <DetailSection title="中文导读：这份资料的主线">
-            <div id="guide" className="note-stack">
+          <DetailSection id="guide" title="中文导读：这份资料的主线">
+            <div className="note-stack">
               {resource.guide.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
             </div>
           </DetailSection>
 
-          <DetailSection title="核心概念">
-            <div id="concepts" className="concept-cloud">
+          {hasItems(resource.lectureSections) ? (
+            <DetailSection id="lecture" title="章节式中文讲义">
+              <LectureSections sections={resource.lectureSections} />
+            </DetailSection>
+          ) : null}
+
+          {hasItems(resource.structureDiagram) ? (
+            <DetailSection id="diagram" title="概念结构图">
+              <StructureDiagram lines={resource.structureDiagram} />
+            </DetailSection>
+          ) : null}
+
+          {hasItems(resource.pseudocode) ? (
+            <DetailSection id="pseudocode" title="最小伪代码">
+              <PseudocodeBlocks blocks={resource.pseudocode} />
+            </DetailSection>
+          ) : null}
+
+          <DetailSection id="concepts" title="核心概念">
+            <div className="concept-cloud">
               {resource.concepts.map((concept) => (
                 <span key={concept}>{concept}</span>
               ))}
             </div>
           </DetailSection>
 
-          <DetailSection title="术语表：英文术语 + 中文解释">
-            <dl id="glossary">
+          <DetailSection id="glossary" title="术语表：英文术语 + 中文解释">
+            <dl>
               <TermTable terms={resource.glossary} />
             </dl>
           </DetailSection>
 
-          <DetailSection title="学习笔记">
-            <div id="notes">
+          <DetailSection id="notes" title="学习笔记">
+            <div>
               <BulletList items={resource.notes} />
             </div>
           </DetailSection>
 
-          <DetailSection title="代码练习">
-            <div id="exercises">
+          <DetailSection id="exercises" title="代码练习">
+            <div>
               <BulletList items={resource.exercises} />
             </div>
           </DetailSection>
 
-          <DetailSection title="面试问题">
-            <div id="questions">
+          {hasItems(resource.interviewTemplates) ? (
+            <DetailSection id="templates" title="面试答题模板">
+              <InterviewTemplates templates={resource.interviewTemplates} />
+            </DetailSection>
+          ) : null}
+
+          <DetailSection id="questions" title="面试问题">
+            <div>
               <BulletList items={resource.interviewQuestions} />
             </div>
           </DetailSection>
 
-          <DetailSection title="学习产出">
-            <div id="outputs">
+          {hasItems(resource.selfTest) ? (
+            <DetailSection id="self-test" title="自测题：附简短参考答案">
+              <SelfTest items={resource.selfTest} />
+            </DetailSection>
+          ) : null}
+
+          <DetailSection id="outputs" title="学习产出">
+            <div>
               <BulletList items={resource.outputs} />
             </div>
             <a className="resource-link primary-link detail-original" href={resource.link} target="_blank" rel="noreferrer">
               查看原文
             </a>
           </DetailSection>
+
+          {hasItems(resource.completionChecklist) ? (
+            <DetailSection id="completion" title="学习完成 checklist">
+              <CompletionChecklist items={resource.completionChecklist} />
+            </DetailSection>
+          ) : null}
         </div>
       </div>
     </main>

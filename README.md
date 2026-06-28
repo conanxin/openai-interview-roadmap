@@ -41,6 +41,23 @@ V2 把项目从“资源导航页”升级为“站内中文学习系统”。
 - `#/resources/leetcode`
 - `#/resources/transformer-from-scratch`
 
+## V3B：Backpropagation / GRPO / Scaling 深度学习页
+
+V3B 把 3 个核心技术资源页从“中文导读”增强为“可直接学习的中文讲义”：
+
+- `#/resources/backpropagation`：反向传播、计算图、链式法则、手写 backward、数值稳定性和常见 bug。
+- `#/resources/grpo`：语言模型后训练、policy/reward/advantage、PPO vs GRPO、group relative advantage 和 KL 约束。
+- `#/resources/scaling`：模型规模、数据规模、计算量、并行策略、KV cache、prefill/decode 和训练/推理成本。
+
+这些深度页新增了章节式讲义、文字概念结构图、最小伪代码、面试答题模板、自测题和学习完成 checklist。
+
+后续计划：
+
+- V3C：Policy Gradient / LeetCode / Transformer from Scratch 深度页
+- V4：Mini GPT from Scratch 代码项目联动
+- V5：学习进度与面试题库
+- V6：把学习页改造成可连续阅读的课程路径
+
 ## 项目目的
 
 - 建立 LLM 底层理解：语言模型、Transformer、tokenizer、loss、training loop。
@@ -84,6 +101,15 @@ src/data/resources.js
 - `exercises`：代码练习
 - `interviewQuestions`：面试问题
 - `outputs`：学习产出
+
+如果要做成 V3 深度学习页，可以继续补充这些可选字段：
+
+- `lectureSections`：章节式中文讲义
+- `structureDiagram`：文字概念结构图
+- `pseudocode`：最小伪代码
+- `interviewTemplates`：面试答题模板
+- `selfTest`：自测题与参考答案
+- `completionChecklist`：学习完成 checklist
 
 添加后页面会自动生成首页资源卡片和 `#/resources/<slug>` 详情页。
 

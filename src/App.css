@@ -542,6 +542,8 @@
   top: 92px;
   display: grid;
   gap: 8px;
+  max-height: calc(100vh - 116px);
+  overflow: auto;
   padding: 18px;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid var(--line);
@@ -664,6 +666,119 @@
   margin: 0;
 }
 
+.lecture-list,
+.pseudocode-list,
+.template-list,
+.self-test-list,
+.completion-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.lecture-card,
+.code-card,
+.template-card,
+.self-test-card {
+  padding: 18px;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.lecture-card {
+  display: grid;
+  gap: 10px;
+}
+
+.lecture-card > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+  background: var(--teal-soft);
+  border: 1px solid rgba(13, 126, 118, 0.16);
+  border-radius: 8px;
+}
+
+.lecture-card h3,
+.code-card h3,
+.template-card h3,
+.self-test-card h3 {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.lecture-card p,
+.template-card p,
+.self-test-card p {
+  margin-top: 10px;
+}
+
+.structure-diagram {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+  padding: 18px;
+  max-width: 100%;
+  overflow-x: auto;
+  color: var(--ink-strong);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  background: linear-gradient(180deg, rgba(13, 126, 118, 0.08), rgba(255, 255, 255, 0.82));
+  border: 1px solid rgba(13, 126, 118, 0.16);
+  border-radius: 8px;
+}
+
+.structure-diagram div {
+  min-width: max-content;
+}
+
+.code-card pre {
+  margin: 14px 0 0;
+  padding: 16px;
+  max-width: 100%;
+  overflow-x: auto;
+  color: #eaf7f5;
+  font-size: 13px;
+  line-height: 1.75;
+  background: #17312f;
+  border-radius: 8px;
+}
+
+.code-card code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  white-space: pre;
+}
+
+.completion-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.75;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.completion-item input {
+  width: 18px;
+  height: 18px;
+  margin-top: 5px;
+  accent-color: var(--teal);
+}
+
 .detail-original {
   margin-top: 22px;
 }
@@ -782,6 +897,7 @@
 
   .detail-summary {
     position: static;
+    max-height: none;
   }
 
   .detail-summary {
