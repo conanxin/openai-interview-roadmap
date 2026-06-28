@@ -44,12 +44,260 @@ export const resourceDetails = [
       '把自己的 3 个项目分别写成 5 分钟、15 分钟、30 分钟版本。',
       '列出 5 个 behavioral stories：冲突、失败、成长、协作、模糊问题推进。',
       '把准备清单分成 coding、ML coding、technical discussion、research discussion 四列。',
+      '为每一种面试类型准备 1 个可验证产出：代码、笔记、讲稿、mock 记录或复盘。',
+      '做一次 60 分钟 mock interview，并用复盘模板记录卡点和下一步行动。',
     ],
     interviewQuestions: [
       '你最有代表性的项目里，真正的新 insight 是什么？',
       '如果给你多 3 个月，你会如何推进这个方向？',
       '一次失败实验如何改变了你的判断？',
       '你如何解释自己适合 OpenAI / AI Lab 的研究环境？',
+      '你如何把学习资源转化成可展示的项目和面试表达？',
+    ],
+    lectureSections: [
+      {
+        title: '1. 这篇笔记真正重要的地方',
+        paragraphs: [
+          'Alisa Liu 的求职笔记最有价值的地方，不是列出了多少资源，而是把 AI Lab 求职拆成了可训练的能力系统。你会看到 coding、ML coding、technical discussion、research discussion、behavioral、job talk 并不是孤立环节，而是在反复验证同一件事：你能否在高不确定性的 AI 研究环境里产出可靠工作。',
+          '因此阅读这类笔记时，不要停在“别人被问了什么”。更重要的是追问：这些问题背后在采样什么能力？我现在有哪些证据能证明自己具备这个能力？还缺哪些证据？',
+        ],
+      },
+      {
+        title: '2. “资源清单”不是核心，“能力转化”才是核心',
+        paragraphs: [
+          '很多准备者会不断收藏课程、博客和题单，但真正进入面试时，面试官看不到你的收藏夹，只看到你的表达、代码、项目判断和复盘能力。',
+          '能力转化的路径是：学习资源变成中文笔记，中文笔记变成可运行代码，代码变成可展示项目，项目变成 research/project story，story 再通过 mock interview 打磨成面试现场的稳定表达。',
+        ],
+      },
+      {
+        title: '3. AI Lab 面试能力模型',
+        paragraphs: [
+          'AI Lab 面试通常同时看三层能力：基础执行力、模型理解力和研究判断力。基础执行力对应 general coding、边界条件和沟通节奏；模型理解力对应 Transformer、loss、backward、decoding、post-training；研究判断力对应实验设计、失败复盘、方向选择和未来工作。',
+          'Behavioral 和 Job Talk 不是“软问题”，它们是在验证你是否有 ownership、协作能力、长期思考和真实项目经验。越是顶级团队，越会关心你如何在模糊问题中推进。',
+        ],
+      },
+      {
+        title: '4. 从学习资源到面试表现的路径',
+        paragraphs: [
+          '每份资源都应该落到一个可见产出。CS336 对应语言模型系统图，Transformer from Scratch 对应 Mini GPT 仓库，Backpropagation 对应手写 backward，GRPO/Policy Gradient 对应后训练解释，Scaling 对应系统 trade-off 讨论。',
+          '面试表现不是临场发挥，而是把这些产出压缩成清晰表达。一个好的准备动作通常同时有三种结果：你写了代码，你写了笔记，你能在 mock 中讲出来。',
+        ],
+      },
+      {
+        title: '5. 面试类型拆解',
+        paragraphs: [
+          'ML Coding 考 tensor shape、模型组件和训练细节；General Coding 考数据结构、算法和工程稳定性；Technical Discussion 考你能否围绕一个技术点持续分析假设、边界和 trade-off。',
+          'Research Discussion 考项目 insight 和未来方向；Behavioral 考协作、失败、成长和 ownership；Math 考线代、概率、反向传播和优化直觉；Job Talk 考你是否能把一个核心项目讲成完整故事。',
+        ],
+      },
+      {
+        title: '6. 求职节奏：准备、投递、面试、复盘、谈 offer',
+        paragraphs: [
+          '准备阶段要先定主线：我用哪个项目证明自己？我缺哪类面试能力？投递阶段要把简历、GitHub、个人页面和 referral 话术对齐，不要让别人替你猜你的强项。',
+          '面试阶段要把每一轮当作信息采样：被问到的问题、卡住的概念、表达不顺的故事都要记录。复盘阶段要快速补洞，谈 offer 阶段则要基于岗位匹配、团队方向、成长空间和风险做判断。',
+        ],
+      },
+      {
+        title: '7. 如何把求职准备变成每周系统',
+        paragraphs: [
+          '不要等“准备完美”再投递。更稳的方式是每周形成一个闭环：补一块知识，产出一份材料，做一次 mock，复盘一次卡点，然后调整下一周重点。',
+          '这个节奏能避免两种常见问题：只学习不投递，或者只投递不复盘。AI Lab 求职本质上是一个迭代系统，和训练模型一样，需要数据、反馈和更新。',
+        ],
+      },
+    ],
+    structureDiagram: [
+      '学习资源',
+      '  -> 中文笔记',
+      '  -> 代码实现',
+      '  -> 可展示项目',
+      '  -> mock interview',
+      '  -> research / project story',
+      '  -> referral / application',
+      '  -> interview loop',
+      '  -> 面试复盘',
+      '  -> offer negotiation',
+    ],
+    interviewPrepMatrix: [
+      {
+        type: 'ML Coding',
+        focus: 'Transformer、loss、decoding、backward、training loop、tensor shape 和数值稳定性。',
+        preparation: '反复手写 Mini GPT、attention、softmax cross entropy、linear backward，并用测试验证 shape 和 mask。',
+        output: 'Mini GPT 仓库、shape trace、backward 推导笔记。',
+        resource: 'Transformer from Scratch / Backpropagation',
+        resourceHref: '#/resources/transformer-from-scratch',
+      },
+      {
+        type: 'General Coding',
+        focus: '数组、哈希、双指针、栈、二分、树图、堆、DP，以及边界条件和复杂度分析。',
+        preparation: '用少量高频题建立模板和沟通节奏，每题记录算法选择理由。',
+        output: '30 题刷题日志、模板笔记、45 分钟模拟记录。',
+        resource: 'LeetCode',
+        resourceHref: '#/resources/leetcode',
+      },
+      {
+        type: 'Technical Discussion',
+        focus: '围绕 positional encoding、parallelism、PPO vs GRPO、scaling 等问题讨论假设、取舍和实验设计。',
+        preparation: '把每个技术点写成“概念、为什么、trade-off、如何验证”的四段回答。',
+        output: '技术问答卡片、实验设计草稿、trade-off 表。',
+        resource: 'Self-Attention / GRPO / Scaling',
+        resourceHref: '#/resources/scaling',
+      },
+      {
+        type: 'Research Discussion',
+        focus: '讲清楚自己的项目问题、方法、关键 insight、失败分支、未来方向和局限。',
+        preparation: '为 1-2 个核心项目准备 5 分钟、15 分钟、30 分钟版本，并做追问演练。',
+        output: '项目故事稿、insight 清单、未来工作路线图。',
+        resource: 'Alisa Job Search Notes',
+        resourceHref: '#/resources/alisa-job-search',
+      },
+      {
+        type: 'Behavioral',
+        focus: '协作、冲突、失败、快速学习、ownership、成长和价值观匹配。',
+        preparation: '用 STAR 结构准备 5 个真实故事，每个故事突出一个能力信号。',
+        output: 'behavioral stories 文档、mock 录音、复盘记录。',
+        resource: 'Alisa Job Search Notes',
+        resourceHref: '#/resources/alisa-job-search',
+      },
+      {
+        type: 'Math',
+        focus: '线代、概率、反向传播、优化、梯度流和常见 loss 的直觉。',
+        preparation: '把公式转成计算图和 shape 解释，优先练会反向传播与概率解释。',
+        output: 'backprop 推导笔记、概率/优化自测题。',
+        resource: 'Backpropagation',
+        resourceHref: '#/resources/backpropagation',
+      },
+      {
+        type: 'Job Talk',
+        focus: '系统展示一个研究或工程项目的背景、问题、方法、实验、影响和下一步。',
+        preparation: '准备 30 分钟讲稿和 10 张以内核心 slides，提前演练时间控制和追问。',
+        output: 'job talk 大纲、slides、追问答案库。',
+        resource: 'Transformer from Scratch / CS336',
+        resourceHref: '#/resources/cs336',
+      },
+    ],
+    behavioralStories: [
+      {
+        title: '最难 debug 的项目',
+        situation: '选择一个真实项目，例如 Mini GPT loss 不下降、attention mask 错误、数据管道污染或训练不稳定。',
+        challenge: '问题现象不直接指向根因，可能牵涉 shape、数据、优化器、数值稳定性或评估脚本。',
+        action: '描述你如何缩小范围：复现实验、打印 shape、写最小测试、对比 baseline、记录假设和排除路径。',
+        result: '说明 bug 如何被定位和修复，以及修复后指标、训练曲线或系统稳定性如何变化。',
+        signal: '突出系统化 debug、耐心、实验纪律和对模型实现细节的理解。',
+      },
+      {
+        title: '失败后如何调整',
+        situation: '选择一次实验、项目方向或申请策略失败的经历。',
+        challenge: '原假设不成立，指标没有改善，或者外部反馈显示当前表达/项目不够有说服力。',
+        action: '说明你如何复盘失败原因，区分数据问题、方法问题、评估问题和沟通问题，并重新设计下一步。',
+        result: '给出调整后的结果，即使不是巨大成功，也要说明你学到了什么，并如何影响后续判断。',
+        signal: '突出成长型心态、研究判断、诚实复盘和快速迭代能力。',
+      },
+      {
+        title: '和别人协作冲突',
+        situation: '选择一次和同学、合作者、导师或工程伙伴在优先级、技术路线或交付标准上不一致的经历。',
+        challenge: '冲突不是人际戏剧，而是目标、信息、风险偏好或时间约束不一致。',
+        action: '说明你如何澄清共同目标，拆分事实和观点，提出可验证方案，并推动对齐。',
+        result: '描述最终协作结果、关系是否改善、项目是否推进，以及你下次会怎样更早对齐。',
+        signal: '突出沟通、ownership、团队意识和在不确定性中推进问题的能力。',
+      },
+      {
+        title: '快速学习新领域',
+        situation: '选择一次你必须快速掌握新技术的经历，例如 RLHF、GRPO、scaling、推理系统或新框架。',
+        challenge: '时间有限，资料很多，且需要把知识转化成项目或讨论能力。',
+        action: '说明你的学习策略：先建概念地图，再做最小实现，再写中文解释，再用 mock 问答测试理解。',
+        result: '给出可见产出：代码、笔记、技术分享、实验结果或面试中能讲清楚的回答。',
+        signal: '突出学习速度、结构化思考和把知识转成行动的能力。',
+      },
+      {
+        title: '最有 insight 的 AI 项目',
+        situation: '选择一个你真正深入过的 AI 项目，而不是只调包完成的 demo。',
+        challenge: '项目中必须有一个非显然判断，例如数据质量比模型更关键、mask bug 导致虚假指标、某个 baseline 更强或推理成本成为瓶颈。',
+        action: '说明你如何发现 insight，做了哪些实验或对比，如何排除其他解释。',
+        result: '说明这个 insight 改变了项目方向、实验设计、模型实现或产品决策。',
+        signal: '突出研究品味、实验判断、技术深度和能从失败/数据中提炼结论的能力。',
+      },
+    ],
+    weeklyJobPlan: [
+      {
+        week: '第 1 周',
+        focus: '整理简历和项目主线',
+        actions: [
+          '选出 1 个主项目和 1 个补充项目，写出问题、方法、结果、insight 和未来方向。',
+          '更新简历，让每条项目经历都包含动作、技术细节和可验证结果。',
+          '整理 GitHub / 项目 README / 个人页面入口，减少面试官理解成本。',
+        ],
+        output: '一版面向 AI Lab 的简历、项目主线文档和 5 分钟项目讲稿。',
+      },
+      {
+        week: '第 2 周',
+        focus: '补齐 ML Coding / Technical Discussion',
+        actions: [
+          '重写一次 Mini GPT 的 attention、block、loss 和 generation。',
+          '补齐 Backpropagation、Policy Gradient、GRPO、Scaling 的答题卡片。',
+          '为每个技术点准备一个“怎么验证”的实验设计回答。',
+        ],
+        output: 'ML coding 代码包、技术讨论问答卡和一次白板讲解记录。',
+      },
+      {
+        week: '第 3 周',
+        focus: 'mock interview 和 behavioral stories',
+        actions: [
+          '完成至少 2 次 mock：一次 coding/ML coding，一次 research/behavioral。',
+          '把 5 个 behavioral stories 写成 STAR 结构，并压缩成 90 秒版本。',
+          '录音复盘表达，标出冗长、模糊和没有证据支撑的句子。',
+        ],
+        output: 'mock interview 记录、5 个 behavioral stories 和改进清单。',
+      },
+      {
+        week: '第 4 周',
+        focus: '投递、内推、复盘、迭代',
+        actions: [
+          '建立目标团队列表，并为每个团队写一句匹配理由。',
+          '准备 referral message，清楚说明研究兴趣、项目证据和目标岗位。',
+          '每次面试后 24 小时内复盘，并把卡点映射到站内资源页补齐。',
+        ],
+        output: '投递追踪表、内推话术、面试复盘文档和下一轮学习计划。',
+      },
+    ],
+    interviewReviewTemplate: [
+      { label: '面试类型', prompt: '这是 ML Coding、General Coding、Technical Discussion、Research Discussion、Behavioral、Math 还是 Job Talk？' },
+      { label: '被问到的问题', prompt: '逐条记录原问题，尽量保留面试官追问的原始措辞。' },
+      { label: '哪些回答卡住', prompt: '标出卡住位置：概念不清、例子不足、代码 bug、复杂度分析、项目表达还是英文/中文组织。' },
+      { label: '哪些概念不熟', prompt: '把薄弱点映射到具体概念，例如 causal mask、advantage、KV cache、gradient flow、binary search invariant。' },
+      { label: '需要补的资源页', prompt: '写下要回看的站内资源页，例如 Backpropagation、GRPO、Scaling、LeetCode、Transformer from Scratch。' },
+      { label: '下一次改进动作', prompt: '只写 1-3 个可执行动作，例如重写一段代码、补一张图、做一次 mock、改写项目故事。' },
+    ],
+    selfTest: [
+      {
+        question: '1. 为什么 AI Lab 面试不只是刷题？',
+        answer: '因为它同时采样 coding、ML 实现、研究判断、技术讨论、项目表达、协作和 ownership。刷题只覆盖其中一部分。',
+      },
+      {
+        question: '2. “资源清单”如何转化成面试能力？',
+        answer: '要把资源变成笔记、代码、项目、mock 表达和复盘记录，最终形成可展示证据。',
+      },
+      {
+        question: '3. 一个好的 Research Discussion 项目故事应该包含什么？',
+        answer: '背景问题、你的方法、关键实验、失败分支、核心 insight、局限和未来方向。',
+      },
+      {
+        question: '4. Behavioral story 为什么要证据化？',
+        answer: '因为面试官需要从真实行动和结果判断协作、抗压、成长和 ownership，而不是听抽象形容词。',
+      },
+      {
+        question: '5. 面试后 24 小时内最应该做什么？',
+        answer: '记录问题、卡点、薄弱概念、需要补的资源页和下一次具体改进动作。',
+      },
+    ],
+    completionChecklist: [
+      '我能解释 AI Lab 面试为什么不只是刷题。',
+      '我有 1 个可展示的 Mini GPT / LLM 项目。',
+      '我能把学习资源映射到面试类型和准备产出。',
+      '我准备了 5 个 behavioral stories。',
+      '我能讲清楚自己的项目 insight 和未来方向。',
+      '我做过至少 3 次 mock interview。',
+      '我有面试复盘记录，并能把卡点映射到具体资源页。',
+      '我有一版简历、项目主线和 referral message 草稿。',
     ],
     outputs: [
       '一页个人面试能力地图。',
@@ -506,12 +754,184 @@ dlogits /= B`,
       '写伪代码：采样回答 -> 计算 reward -> 计算 advantage -> 更新 policy。',
       '对比 SFT loss 和 policy gradient loss 的优化对象。',
       '构造一个简单 reward，例如答案长度或格式正确性，模拟一次 policy update。',
+      '写一个 toy policy gradient loss：输入 logprob 和 reward，输出可反向传播的 loss。',
+      '画出 policy gradient、PPO、GRPO 的关系图，标出 advantage 从哪里来。',
     ],
     interviewQuestions: [
       '语言模型里的 policy 和 action 分别是什么？',
       '为什么 RLHF 需要 KL penalty？',
       'advantage 相比直接使用 reward 有什么作用？',
       'PPO 想解决普通 policy gradient 的什么问题？',
+      '为什么后训练不是简单 supervised learning？',
+    ],
+    lectureSections: [
+      {
+        title: '1. 为什么语言模型可以看作 policy',
+        paragraphs: [
+          '在强化学习里，policy 是给定 state 后选择 action 的概率分布。语言模型给定 prompt 和已生成 prefix 后，会输出 next-token distribution，所以它天然可以被看作一个 policy。',
+          '区别在于语言模型的 action 空间非常大：每一步 action 是词表里的一个 token，完整 response 是一串 action 组成的 trajectory。这让 RL 目标有用，也让方差、采样成本和稳定性问题更突出。',
+        ],
+      },
+      {
+        title: '2. prompt、state、action、trajectory、reward 的对应关系',
+        paragraphs: [
+          'prompt 是任务输入；当前已生成的 prefix 可以看作 state；模型下一步采样的 token 是 action；从第一个生成 token 到停止符的整段 response 是 trajectory。',
+          'reward 是对完整 response 或中间步骤的评分。它可以来自人工偏好、reward model、规则、单元测试、数学答案验证器或格式检查器。',
+        ],
+      },
+      {
+        title: '3. Policy gradient 的核心目标',
+        paragraphs: [
+          'policy gradient 的目标不是直接拟合某个标准答案，而是提高高 reward trajectory 的概率，降低低 reward trajectory 的概率。它优化的是“模型行为带来的期望 reward”。',
+          '在语言模型里，这通常表现为：如果某段回答得分高，就增加这段回答中 token 序列的 log probability；如果得分低，就减少它们的概率。',
+        ],
+      },
+      {
+        title: '4. REINFORCE 的直觉',
+        paragraphs: [
+          'REINFORCE 可以理解成“采样一个行为，得到结果评分，然后把评分乘到这次行为的 log probability 上”。如果 reward 高，梯度会推高这次采样路径的概率；如果 reward 低，梯度会推低它。',
+          '它的优点是简单，不需要 reward 对 token 采样动作可导；缺点是方差很大，因为一次采样的 reward 可能受随机性影响很强。',
+        ],
+      },
+      {
+        title: '5. Advantage 为什么重要',
+        paragraphs: [
+          '只看 reward 容易误判：一个 0.7 的 reward 在难题里可能很好，在简单题里可能很差。advantage 表示“比基线好多少”，把绝对分数转成相对改进信号。',
+          '正 advantage 表示这次回答比预期好，应该提高概率；负 advantage 表示比预期差，应该降低概率。这也是 PPO、GRPO 都围绕 advantage 做文章的原因。',
+        ],
+      },
+      {
+        title: '6. Variance 问题从哪里来',
+        paragraphs: [
+          '语言模型生成是随机采样，同一个 prompt 可能生成多种 response。reward 还可能稀疏、延迟、带噪声。把整段 response 的 reward 直接分配给每个 token，会让梯度估计很不稳定。',
+          'variance 高的表现是训练抖动、需要大量样本、对 reward scaling 敏感。baseline、value function、reward normalization、KL 约束和 PPO clipping 都是在改善稳定性。',
+        ],
+      },
+      {
+        title: '7. Baseline / value function 的作用',
+        paragraphs: [
+          'baseline 是一个参照值，用来把 reward 转成 advantage。只要 baseline 不依赖当前 action，它不会改变 policy gradient 的期望方向，却能降低方差。',
+          'value function 可以学习预测某个 state 下的期望回报，PPO 常用 critic/value model 来估计 baseline。GRPO 则用同一 prompt 下多个回答的组内统计量构造相对 baseline。',
+        ],
+      },
+      {
+        title: '8. Policy gradient 与 RLHF、PPO、GRPO 的关系',
+        paragraphs: [
+          'RLHF 是把人类偏好或偏好模型作为 reward 来后训练语言模型的一类流程。policy gradient 是其中优化 policy 的基础思想：通过 reward 信号调整生成概率。',
+          'PPO 在 policy gradient 上加了 clipping、critic 和 KL 等稳定机制；GRPO 保留 reward 优化思路，但用 group relative advantage 简化 value/critic 依赖。',
+        ],
+      },
+      {
+        title: '9. 后训练为什么不是简单 supervised learning',
+        paragraphs: [
+          'SFT 依赖固定标签答案，目标是让模型模仿示范。后训练常常面对的是偏好、约束、可验证结果或任务成功率，不一定只有唯一标准答案。',
+          '在后训练里，模型可能生成多个候选，系统通过 reward 比较它们的质量，再优化生成策略。这更像行为优化，而不是单纯拟合下一个 token 标签。',
+        ],
+      },
+    ],
+    structureDiagram: [
+      'prompt',
+      '  -> 当前生成 prefix 作为 state',
+      '  -> LM 产生 next-token distribution',
+      '  -> 采样 token 作为 action',
+      '  -> token 追加到 prefix',
+      '  -> 形成完整 response / trajectory',
+      '  -> reward model / rule 打分',
+      '  -> reward - baseline 得到 advantage',
+      '  -> 根据 advantage 更新 policy',
+    ],
+    pseudocode: [
+      {
+        title: '最小 policy gradient loss',
+        code: `prompt = sample_prompt()
+response, token_logprobs = policy.sample_with_logprobs(prompt)
+
+reward = score(prompt, response)
+baseline = estimate_baseline(prompt)
+advantage = reward - baseline
+
+# maximize advantage * logprob, so minimize negative objective
+loss = -advantage * sum(token_logprobs)
+loss.backward()
+optimizer.step()`,
+      },
+      {
+        title: 'SFT loss 与 policy gradient loss 对比',
+        code: `# SFT: 给定标准答案 token，最大化这些标签 token 的概率
+sft_loss = cross_entropy(model(prompt), target_tokens)
+
+# Policy gradient: 先采样 response，再按 reward 强化或削弱这条路径
+logprob = model.logprob(prompt, sampled_response)
+pg_loss = -advantage * logprob`,
+      },
+      {
+        title: 'reward 如何影响 token 概率',
+        code: `if advantage > 0:
+    # 这条 response 比基线好
+    # 梯度方向会提高组成它的 token log probability
+    increase_probability(sampled_tokens)
+else:
+    # 这条 response 比基线差
+    # 梯度方向会降低组成它的 token log probability
+    decrease_probability(sampled_tokens)`,
+      },
+    ],
+    interviewTemplates: [
+      {
+        question: '如果面试官问：为什么语言模型可以看作 policy？',
+        answer: '可以这样回答：policy 是给定 state 后对 action 的概率分布。语言模型给定 prompt 和已生成 prefix 后输出 next-token distribution，所以 state 是上下文，action 是下一个 token，完整回答就是一条 trajectory。',
+      },
+      {
+        question: '如果面试官问：policy gradient 的目标是什么？',
+        answer: '可以这样回答：目标是最大化模型生成行为的期望 reward。实现上会提高高 reward 或正 advantage 回答的 log probability，降低低 reward 或负 advantage 回答的概率。',
+      },
+      {
+        question: '如果面试官问：log probability 为什么出现在 loss 里？',
+        answer: '可以这样回答：采样动作本身不可导，但 log probability 对模型参数可导。policy gradient 用 reward 或 advantage 作为权重，调整被采样轨迹的 log probability，从而间接提高好行为的采样概率。',
+      },
+      {
+        question: '如果面试官问：advantage 和 baseline 的作用是什么？',
+        answer: '可以这样回答：advantage 是 reward 相对基线的改进量。baseline 不改变期望梯度方向，但能降低方差，让模型关注“比预期好还是差”，而不是只看绝对 reward。',
+      },
+      {
+        question: '如果面试官问：policy gradient、PPO、GRPO 是什么关系？',
+        answer: '可以这样回答：policy gradient 是基础优化思想。PPO 加入 clipping、critic/value、KL 等机制让更新更稳定；GRPO 用同一 prompt 的多个回答构造 group relative advantage，减少对单独 critic 的依赖。',
+      },
+      {
+        question: '如果面试官问：为什么后训练不是简单 supervised learning？',
+        answer: '可以这样回答：SFT 拟合固定示范答案，后训练优化的是偏好、正确性或任务成功率。模型会生成候选回答，再通过 reward 或比较信号更新行为，目标不是只复刻标签，而是让策略更倾向高质量输出。',
+      },
+    ],
+    selfTest: [
+      {
+        question: '1. 在语言模型生成中，state 和 action 分别是什么？',
+        answer: 'state 是 prompt 加当前 prefix，action 是下一步采样的 token。',
+      },
+      {
+        question: '2. trajectory 对应语言模型里的什么？',
+        answer: '一次完整生成的 token 序列，也就是 response。',
+      },
+      {
+        question: '3. REINFORCE 的核心直觉是什么？',
+        answer: '用采样结果的 reward 加权这条轨迹的 log probability，高 reward 提高概率，低 reward 降低概率。',
+      },
+      {
+        question: '4. baseline 为什么能降低方差？',
+        answer: '它把绝对 reward 转成相对优势，减少不同 prompt 或不同难度带来的波动，同时不改变期望梯度方向。',
+      },
+      {
+        question: '5. PPO 和 GRPO 都离不开 policy gradient 的哪条主线？',
+        answer: '都在用 reward/advantage 信号调整语言模型生成策略，只是稳定机制和 advantage 估计方式不同。',
+      },
+    ],
+    completionChecklist: [
+      '我能把 prompt、prefix、token、response 分别映射到 RL 的 state、action、trajectory。',
+      '我能写出最小 policy gradient loss，并解释负号的含义。',
+      '我能解释 log probability 为什么是优化入口。',
+      '我能说明 reward、baseline、advantage 的区别。',
+      '我能讲清楚 variance 问题为什么会出现。',
+      '我能比较 SFT loss 和 policy gradient loss。',
+      '我能把 policy gradient、PPO、GRPO 放在同一张关系图里说明。',
     ],
     outputs: [
       '一页 SFT / RLHF / PPO 数据流对比图。',
@@ -1015,12 +1435,185 @@ kv_bytes = kv_elements * bytes_per_element
       '完成 30 道高频题，每题写复杂度和一句证明。',
       '每天选 1 题录音讲解，限制 5 分钟。',
       '整理 8 个模板：滑动窗口、二分、BFS、DFS、堆、前缀和、DP、并查集。',
+      '每周做一次 45 分钟限时模拟，强制先口述再写代码。',
+      '复盘错题并记录模式：卡在读题、数据结构、边界还是实现细节。',
     ],
     interviewQuestions: [
       '你为什么选择这个数据结构？',
       '这个算法的不变量是什么？',
       '复杂度能否进一步优化？',
       '如果输入为空、重复或极大，会发生什么？',
+      '你如何从 brute force 逐步优化到当前方案？',
+    ],
+    lectureSections: [
+      {
+        title: '1. 为什么 AI Lab 面试仍然考 general coding',
+        paragraphs: [
+          'Research Engineer 和 GenAI Engineer 不只写模型代码，也会写数据管道、评测工具、服务逻辑和实验基础设施。General coding 考的是在压力下把问题拆清楚、写对、测对、讲清楚的能力。',
+          'LeetCode 不是衡量研究能力的全部，但它能暴露候选人的基本工程稳定性：能否处理边界条件、能否选择合适数据结构、能否在 bug 出现时快速定位。',
+        ],
+      },
+      {
+        title: '2. 高频题型应该如何组织',
+        paragraphs: [
+          '建议按模式而不是按题号学习：array/hashmap 训练计数和索引映射；two pointers 训练有序结构和窗口不变量；stack 训练最近未匹配状态；binary search 训练单调性；tree/graph 训练遍历和 visited；heap 训练动态 top-k；DP 训练状态定义和转移。',
+          '每类题都要沉淀“什么时候用”和“为什么正确”，而不是只背模板。面试中，能解释选择依据比快速贴出代码更重要。',
+        ],
+      },
+      {
+        title: '3. 如何用最少题量建立稳定手感',
+        paragraphs: [
+          '不要盲目刷几百题。更高效的方式是选 Blind 75 或高频清单，每个类型做 5 到 10 题，目标是形成识别模式的速度和编码模板的肌肉记忆。',
+          '每题做完写三句话：这题属于什么模式、核心不变量是什么、下次怎么更快识别。30 道高质量复盘题通常比 100 道无复盘题更有价值。',
+        ],
+      },
+      {
+        title: '4. 面试时如何沟通思路',
+        paragraphs: [
+          '推荐顺序是：复述题意，明确输入输出和约束，举一个例子，先讲 brute force，再指出瓶颈，提出优化思路，最后编码和测试。',
+          '不要一上来沉默写代码。面试官真正想看的是你的推理过程。即使最终代码有小 bug，清晰沟通也能让对方知道你在哪里、为什么这么做。',
+        ],
+      },
+      {
+        title: '5. 从 brute force 到 better solution',
+        paragraphs: [
+          'brute force 是起点，不是失败。它能帮你确认问题本质和复杂度瓶颈。优化通常来自三类动作：用 hashmap 记住过去信息，用排序/双指针利用有序性，用 heap/queue/stack 维护动态状态。',
+          '面试表达里可以这样说：暴力解需要枚举所有组合，时间是 O(n^2)；瓶颈是重复查找；我们可以用 hashmap 把查找降到 O(1)，整体变成 O(n)。',
+        ],
+      },
+      {
+        title: '6. 边界条件和复杂度分析',
+        paragraphs: [
+          '边界条件至少覆盖空输入、单元素、重复值、负数或极值、无解、有多个答案、图中环、树为空、数组已排序或完全逆序。',
+          '复杂度分析要说清楚 n 代表什么。图题里可能是 V 和 E；字符串题可能是字符数和词表大小；堆题要说明每次操作的 log k 来自堆大小。',
+        ],
+      },
+      {
+        title: '7. LeetCode 和 ML Coding 的区别',
+        paragraphs: [
+          'LeetCode 训练通用数据结构、算法选择和实现稳定性；ML Coding 训练 tensor shape、数值稳定性、模型模块和训练流程。两者都考代码清晰度，但心智模型不同。',
+          '准备 AI Lab 面试时要两条线并行：general coding 保证基础过线，ML coding 展示你能实现 attention、loss、decoding、backward 等模型核心。',
+        ],
+      },
+    ],
+    structureDiagram: [
+      '读题',
+      '  -> 明确输入输出',
+      '  -> 澄清约束和边界',
+      '  -> 举例 dry run',
+      '  -> 暴力解',
+      '  -> 找瓶颈',
+      '  -> 优化数据结构或算法',
+      '  -> 写代码',
+      '  -> 测边界',
+      '  -> 分析时间和空间复杂度',
+      '  -> 总结为什么正确',
+    ],
+    pseudocode: [
+      {
+        title: 'Hashmap 计数模板',
+        code: `count = {}
+for x in nums:
+    count[x] = count.get(x, 0) + 1
+
+for key, freq in count.items():
+    if meets_condition(key, freq):
+        return answer`,
+      },
+      {
+        title: 'Two pointers 模板',
+        code: `left = 0
+right = len(nums) - 1
+
+while left < right:
+    current = nums[left] + nums[right]
+    if current == target:
+        return [left, right]
+    if current < target:
+        left += 1
+    else:
+        right -= 1`,
+      },
+      {
+        title: 'BFS 模板',
+        code: `queue = deque([start])
+visited = set([start])
+
+while queue:
+    node = queue.popleft()
+    for nxt in neighbors(node):
+        if nxt in visited:
+            continue
+        visited.add(nxt)
+        queue.append(nxt)`,
+      },
+      {
+        title: 'Binary search 模板',
+        code: `left = 0
+right = n
+
+while left < right:
+    mid = (left + right) // 2
+    if condition(mid):
+        right = mid
+    else:
+        left = mid + 1
+
+return left`,
+      },
+    ],
+    interviewTemplates: [
+      {
+        question: '如果面试官问：你为什么选择这个数据结构？',
+        answer: '可以这样回答：我先看暴力解的瓶颈在哪里。如果瓶颈是重复查找，我会考虑 hashmap；如果要维护动态最值或 top-k，我会考虑 heap；如果是最近未匹配状态，我会考虑 stack。这个选择是为了把瓶颈操作从 O(n) 降到 O(1) 或 O(log n)。',
+      },
+      {
+        question: '如果面试官问：你如何从 brute force 优化？',
+        answer: '可以这样回答：先给出暴力解确认正确性和复杂度，再指出重复计算或重复查找的瓶颈，然后引入数据结构保存中间信息，或者利用排序、单调性、窗口不变量来减少搜索空间。',
+      },
+      {
+        question: '如果面试官问：这个算法的不变量是什么？',
+        answer: '可以这样回答：不变量是循环过程中始终保持成立的条件。比如滑动窗口里窗口始终满足某个约束；二分里答案始终落在 [left, right)；BFS 里 queue 中节点是下一层待扩展节点。',
+      },
+      {
+        question: '如果面试官问：你会怎么测试这段代码？',
+        answer: '可以这样回答：我会先测题目样例，再测最小输入、空输入、重复值、无解、多解、负数或极值。如果是图题，会测环和不连通；如果是二分，会测边界位置和找不到目标。',
+      },
+      {
+        question: '如果面试官问：LeetCode 和 ML Coding 有什么不同？',
+        answer: '可以这样回答：LeetCode 更关注通用算法、数据结构和复杂度；ML Coding 更关注 tensor shape、数值稳定性、模型模块和训练流程。准备 AI Lab 面试需要两者都稳定，但展示的能力不同。',
+      },
+    ],
+    selfTest: [
+      {
+        question: '1. 什么时候优先考虑 hashmap？',
+        answer: '当暴力解瓶颈是重复查找、计数、去重或需要从值快速映射到索引时。',
+      },
+      {
+        question: '2. 二分搜索最重要的前提是什么？',
+        answer: '存在可利用的单调性，不一定是数组排序，也可能是答案空间上的条件单调。',
+      },
+      {
+        question: '3. BFS 通常适合解决哪类问题？',
+        answer: '无权图最短步数、层序遍历、状态空间按步扩展等问题。',
+      },
+      {
+        question: '4. 为什么面试里要先讲 brute force？',
+        answer: '它能证明你理解问题，并为后续优化提供清晰瓶颈。',
+      },
+      {
+        question: '5. 复杂度分析里 n 代表什么需要说明吗？',
+        answer: '需要。不同题里 n 可能是数组长度、节点数、边数、字符串长度或堆大小，含义会影响分析准确性。',
+      },
+    ],
+    completionChecklist: [
+      '我能按固定流程完成读题、澄清、暴力解、优化、编码、测试和复杂度分析。',
+      '我能说出 array/hashmap、two pointers、stack、binary search、tree/graph、heap、DP 的典型触发信号。',
+      '我能手写 hashmap、two pointers、BFS、binary search 四个模板。',
+      '我能为每题写一句“为什么用这个算法”。',
+      '我能在 45 分钟内完成一道中等题的沟通和实现。',
+      '我能系统复盘错题并归类失败原因。',
+      '我能区分 general coding 和 ML coding 的训练目标。',
     ],
     outputs: [
       '30 题刷题日志。',
@@ -1083,6 +1676,193 @@ kv_bytes = kv_elements * bytes_per_element
       '如果 loss 不下降，你会如何排查？',
       'top-k 和 top-p sampling 有什么区别？',
       'Transformer block 中 residual 和 layer norm 的作用是什么？',
+      '你如何设计测试证明自己的 Transformer 实现是正确的？',
+    ],
+    lectureSections: [
+      {
+        title: '1. 为什么反复从零实现 Transformer 是关键训练',
+        paragraphs: [
+          '读懂 Transformer 和能独立实现 Transformer 是两种能力。面试里，真正拉开差距的是你能不能把 tokenizer、attention、loss、training loop、generation 这些环节串成可运行系统。',
+          '反复实现的价值在于形成 shape 直觉和 debug 经验。第一次跑通，第二次写清 shape，第三次加测试，第四次能在白板或面试中讲清设计取舍。',
+        ],
+      },
+      {
+        title: '2. Mini GPT 项目应该包含哪些模块',
+        paragraphs: [
+          '一个最小但完整的 GPT 项目应该包含 tokenizer 或字符级编码器、dataset/batching、token embedding、position embedding、causal self-attention、MLP、LayerNorm、residual、logits head、cross entropy loss、optimizer、training loop 和 generation。',
+          '不需要一开始追求大规模。小语料、小 context、小 hidden size 更适合学习，因为它让每个 bug 都更容易定位，也方便写单元测试。',
+        ],
+      },
+      {
+        title: '3. tokenizer、dataset、embedding、attention、loss、generation 的关系',
+        paragraphs: [
+          '文本先经过 tokenizer 变成 token ids，dataset 把 ids 切成输入 x 和目标 y。embedding 把离散 token 映射成向量，再加 position 信息。Transformer blocks 处理上下文，输出 logits。',
+          '训练时 logits 和目标 y 进入 cross entropy loss，反向传播更新参数。生成时模型根据 logits 采样下一个 token，把 token 追加到上下文，再循环生成。',
+        ],
+      },
+      {
+        title: '4. Causal mask 和 shape debug 为什么重要',
+        paragraphs: [
+          'decoder-only GPT 不能看未来 token，所以 attention score 必须加 causal mask。mask 方向一旦反了，模型要么泄漏未来信息，要么无法关注有效上下文。',
+          'shape debug 是 ML Coding 的核心。你要能随口说出 x、q、k、v、attention score、attention output、logits、targets 的 shape，并知道每次 reshape/transpose 为什么存在。',
+        ],
+      },
+      {
+        title: '5. Top-k、top-p、temperature sampling 的作用',
+        paragraphs: [
+          'temperature 控制 logits 分布的尖锐程度：低 temperature 更保守，高 temperature 更多样。top-k 只保留概率最高的 k 个 token，top-p 保留累计概率达到 p 的最小候选集合。',
+          '这些采样策略不是模型训练本身，但它们决定生成行为。面试时要能解释为什么 greedy 可能重复、为什么 sampling 更有多样性、为什么 top-p 比固定 top-k 更自适应。',
+        ],
+      },
+      {
+        title: '6. 如何设计测试证明实现正确',
+        paragraphs: [
+          '测试应该覆盖 shape、mask、loss shift 和 generation。比如 attention 输出 shape 必须等于输入 shape；第 t 个位置不能关注未来 token；logits flatten 后和 target flatten 的长度要一致；eval generation 应该使用 no_grad。',
+          '还可以做微型 overfit 测试：让小模型在极小数据上训练到很低 loss。如果连小数据都过拟合不了，通常说明 mask、loss、optimizer 或数据切片有 bug。',
+        ],
+      },
+      {
+        title: '7. 如何做成 GitHub 作品集',
+        paragraphs: [
+          '作品集不只是代码跑通。README 应该解释模块结构、数据流、关键 shape、训练命令、采样示例、测试覆盖和已知限制。最好附一张 loss curve 和几段生成样例。',
+          '把 bug ledger 也写进去会很加分：记录 mask 方向、target shift、reshape、dtype、device、eval/no_grad 等真实问题，说明你不仅会写，还会 debug。',
+        ],
+      },
+      {
+        title: '8. 面试中如何讲这个项目',
+        paragraphs: [
+          '讲项目时先给系统图：文本到 tokenizer，到 batch，到 embedding，到 Transformer blocks，到 logits/loss，再到 optimizer 和 generation。然后挑一个深点，例如 causal attention 或 sampling，讲 shape 和 trade-off。',
+          '最后讲你如何验证：单元测试、shape trace、overfit 小数据、loss 曲线和生成样例。这样的讲法比“我复现了 nanoGPT”更像真正掌握。',
+        ],
+      },
+    ],
+    structureDiagram: [
+      '文本数据',
+      '  -> tokenizer',
+      '  -> token ids',
+      '  -> batch: x / y',
+      '  -> token embedding + position embedding',
+      '  -> Transformer blocks',
+      '      -> causal self-attention',
+      '      -> MLP',
+      '      -> residual + LayerNorm',
+      '  -> logits',
+      '  -> cross entropy loss',
+      '  -> backward + optimizer update',
+      '  -> generation: sample next token and append',
+    ],
+    pseudocode: [
+      {
+        title: 'Minimal GPT forward',
+        code: `def forward(idx, targets=None):
+    # idx: [B, T]
+    tok = token_embedding(idx)          # [B, T, C]
+    pos = position_embedding(arange(T)) # [T, C]
+    x = tok + pos
+
+    for block in transformer_blocks:
+        x = block(x)
+
+    logits = lm_head(layer_norm(x))     # [B, T, vocab]
+    loss = None
+    if targets is not None:
+        loss = cross_entropy(logits.view(B*T, vocab), targets.view(B*T))
+    return logits, loss`,
+      },
+      {
+        title: 'Causal self-attention',
+        code: `q = Wq(x).view(B, T, heads, head_dim).transpose(1, 2)
+k = Wk(x).view(B, T, heads, head_dim).transpose(1, 2)
+v = Wv(x).view(B, T, heads, head_dim).transpose(1, 2)
+
+scores = q @ k.transpose(-2, -1) / sqrt(head_dim)
+scores = scores.masked_fill(causal_mask[:T, :T] == 0, -inf)
+weights = softmax(scores, dim=-1)
+
+out = weights @ v
+out = out.transpose(1, 2).contiguous().view(B, T, C)`,
+      },
+      {
+        title: 'Training loop',
+        code: `for step in range(max_steps):
+    x, y = get_batch(train_data)
+    logits, loss = model(x, y)
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    if step % eval_interval == 0:
+        print(step, loss.item())`,
+      },
+      {
+        title: 'Generation loop',
+        code: `for _ in range(max_new_tokens):
+    context = idx[:, -block_size:]
+    logits, _ = model(context)
+    next_logits = logits[:, -1, :] / temperature
+    filtered = apply_top_k_or_top_p(next_logits)
+    probs = softmax(filtered, dim=-1)
+    next_id = sample(probs)
+    idx = concat(idx, next_id, dim=1)`,
+      },
+    ],
+    interviewTemplates: [
+      {
+        question: '如果面试官问：你如何从零写一个最小 GPT？',
+        answer: '可以这样回答：我会从数据流讲起：文本经过 tokenizer 得到 token ids，切 batch 得到 x/y，x 进入 token embedding 和 position embedding，然后过多个 Transformer block，最后 lm head 输出 logits，和 y 做 cross entropy。训练用 backward 和 optimizer step，推理用 logits 采样下一个 token。',
+      },
+      {
+        question: '如果面试官问：causal mask 为什么重要？',
+        answer: '可以这样回答：decoder-only LM 训练时每个位置只能预测下一个 token，不能看到未来 token。causal mask 会把未来位置的 attention score 设为负无穷，防止信息泄漏。如果 mask 方向错了，训练 loss 可能异常低或模型无法学习。',
+      },
+      {
+        question: '如果面试官问：loss 不下降你怎么排查？',
+        answer: '可以这样回答：先检查数据 x/y 是否 shift 正确，再检查 logits 和 targets flatten 后长度是否一致；然后看 mask 方向、学习率、optimizer、梯度是否为 nan、模型是否能 overfit 极小数据；最后检查 eval/train mode 和 dtype/device。',
+      },
+      {
+        question: '如果面试官问：top-k、top-p、temperature 有什么区别？',
+        answer: '可以这样回答：temperature 调整分布尖锐程度；top-k 固定保留概率最高的 k 个 token；top-p 保留累计概率达到 p 的候选集合，更能随上下文自适应候选数量。',
+      },
+      {
+        question: '如果面试官问：如何证明你的实现正确？',
+        answer: '可以这样回答：我会写 shape tests、causal mask tests、loss shift tests 和 generation smoke tests；再做 tiny overfit，确认小模型能在极小数据上把 loss 降下来；最后用 PyTorch baseline 或已知实现对齐关键输出。',
+      },
+      {
+        question: '如果面试官问：这个项目如何体现工程能力？',
+        answer: '可以这样回答：除了模型代码，我会展示 README、训练脚本、测试、loss curve、生成样例和 bug ledger。重点是证明我能把研究概念落成可运行、可调试、可解释的代码系统。',
+      },
+    ],
+    selfTest: [
+      {
+        question: '1. Mini GPT 训练时 x 和 y 的关系是什么？',
+        answer: '通常 y 是 x 向右移动一位后的目标 token，用当前位置上下文预测下一个 token。',
+      },
+      {
+        question: '2. attention score 的常见 shape 是什么？',
+        answer: '通常是 [B, heads, T, T]，表示每个 head 中每个 token 对其他 token 的注意力分数。',
+      },
+      {
+        question: '3. causal mask 把哪些位置屏蔽掉？',
+        answer: '屏蔽当前位置之后的未来 token，让第 t 个位置只能看 0 到 t 的上下文。',
+      },
+      {
+        question: '4. top-p 相比 top-k 的主要区别是什么？',
+        answer: 'top-k 固定候选数量，top-p 按累计概率动态确定候选集合大小。',
+      },
+      {
+        question: '5. tiny overfit 测试能发现什么问题？',
+        answer: '如果模型不能在极小数据上过拟合，往往说明数据切片、mask、loss、optimizer 或梯度路径存在 bug。',
+      },
+    ],
+    completionChecklist: [
+      '我能画出文本到 logits/loss/generation 的完整数据流。',
+      '我能写出 minimal GPT forward，并标注每个关键 tensor shape。',
+      '我能实现 causal self-attention，并测试不能看未来 token。',
+      '我能实现 training loop，并解释 zero_grad、backward、step 的顺序。',
+      '我能实现 temperature、top-k、top-p sampling。',
+      '我能设计 shape、mask、loss shift、generation 和 tiny overfit 测试。',
+      '我能把项目整理成 GitHub 作品集 README，并在面试中讲清楚。',
     ],
     outputs: [
       '一个 Mini GPT from Scratch 仓库。',

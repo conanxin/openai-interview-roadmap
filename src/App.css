@@ -668,6 +668,10 @@
 
 .lecture-list,
 .pseudocode-list,
+.prep-matrix,
+.story-list,
+.job-plan-list,
+.review-template-list,
 .template-list,
 .self-test-list,
 .completion-list {
@@ -678,6 +682,10 @@
 
 .lecture-card,
 .code-card,
+.matrix-card,
+.story-card,
+.job-plan-card,
+.review-template-card,
 .template-card,
 .self-test-card {
   padding: 18px;
@@ -706,6 +714,10 @@
 
 .lecture-card h3,
 .code-card h3,
+.matrix-card h3,
+.story-card h3,
+.job-plan-card h3,
+.review-template-card h3,
 .template-card h3,
 .self-test-card h3 {
   margin: 0;
@@ -715,9 +727,74 @@
 }
 
 .lecture-card p,
+.review-template-card p,
 .template-card p,
 .self-test-card p {
   margin-top: 10px;
+}
+
+.prep-matrix,
+.job-plan-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.matrix-card dl,
+.story-card dl {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+
+.matrix-card dl div,
+.story-card dl div {
+  display: grid;
+  gap: 4px;
+}
+
+.matrix-card dt,
+.story-card dt {
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.matrix-card dd,
+.story-card dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.matrix-card a {
+  color: var(--teal);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.matrix-card a:hover {
+  text-decoration: underline;
+}
+
+.job-plan-card p {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 10px;
+  padding: 5px 10px;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+  background: var(--teal-soft);
+  border: 1px solid rgba(13, 126, 118, 0.16);
+  border-radius: 8px;
+}
+
+.job-plan-card strong {
+  display: block;
+  margin-top: 14px;
+  color: var(--ink-strong);
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 .structure-diagram {
@@ -873,7 +950,9 @@
   .resource-grid,
   .week-grid,
   .checklist,
-  .project-list {
+  .project-list,
+  .prep-matrix,
+  .job-plan-list {
     grid-template-columns: 1fr;
   }
 

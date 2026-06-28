@@ -24,6 +24,10 @@ const baseDetailNavItems = [
   { id: 'lecture', label: '章节讲义', field: 'lectureSections' },
   { id: 'diagram', label: '概念结构图', field: 'structureDiagram' },
   { id: 'pseudocode', label: '最小伪代码', field: 'pseudocode' },
+  { id: 'prep-matrix', label: '准备矩阵', field: 'interviewPrepMatrix' },
+  { id: 'story-library', label: '故事库', field: 'behavioralStories' },
+  { id: 'action-plan', label: '行动计划', field: 'weeklyJobPlan' },
+  { id: 'review-template', label: '复盘模板', field: 'interviewReviewTemplate' },
   { id: 'concepts', label: '核心概念' },
   { id: 'glossary', label: '术语表' },
   { id: 'notes', label: '学习笔记' },
@@ -160,6 +164,104 @@ function PseudocodeBlocks({ blocks }) {
           <pre>
             <code>{block.code}</code>
           </pre>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function InterviewPrepMatrix({ items }) {
+  return (
+    <div className="prep-matrix">
+      {items.map((item) => (
+        <article className="matrix-card" key={item.type}>
+          <h3>{item.type}</h3>
+          <dl>
+            <div>
+              <dt>考察内容</dt>
+              <dd>{item.focus}</dd>
+            </div>
+            <div>
+              <dt>准备方式</dt>
+              <dd>{item.preparation}</dd>
+            </div>
+            <div>
+              <dt>推荐产出</dt>
+              <dd>{item.output}</dd>
+            </div>
+            <div>
+              <dt>对应站内资源页</dt>
+              <dd>
+                {item.resourceHref ? (
+                  <a href={item.resourceHref}>{item.resource}</a>
+                ) : (
+                  item.resource
+                )}
+              </dd>
+            </div>
+          </dl>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function BehavioralStoryLibrary({ stories }) {
+  return (
+    <div className="story-list">
+      {stories.map((story) => (
+        <article className="story-card" key={story.title}>
+          <h3>{story.title}</h3>
+          <dl>
+            <div>
+              <dt>场景</dt>
+              <dd>{story.situation}</dd>
+            </div>
+            <div>
+              <dt>冲突/挑战</dt>
+              <dd>{story.challenge}</dd>
+            </div>
+            <div>
+              <dt>行动</dt>
+              <dd>{story.action}</dd>
+            </div>
+            <div>
+              <dt>结果</dt>
+              <dd>{story.result}</dd>
+            </div>
+            <div>
+              <dt>突出能力</dt>
+              <dd>{story.signal}</dd>
+            </div>
+          </dl>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function WeeklyJobPlan({ weeks }) {
+  return (
+    <div className="job-plan-list">
+      {weeks.map((week) => (
+        <article className="job-plan-card" key={week.week}>
+          <p>{week.week}</p>
+          <h3>{week.focus}</h3>
+          <BulletList items={week.actions} />
+          <strong>{week.output}</strong>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function InterviewReviewTemplate({ fields }) {
+  return (
+    <div className="review-template-list">
+      {fields.map((field) => (
+        <article className="review-template-card" key={field.label}>
+          <h3>{field.label}</h3>
+          <p>{field.prompt}</p>
         </article>
       ))}
     </div>
@@ -486,6 +588,30 @@ function ResourceDetail({ resource }) {
           {hasItems(resource.pseudocode) ? (
             <DetailSection id="pseudocode" title="最小伪代码">
               <PseudocodeBlocks blocks={resource.pseudocode} />
+            </DetailSection>
+          ) : null}
+
+          {hasItems(resource.interviewPrepMatrix) ? (
+            <DetailSection id="prep-matrix" title="面试准备矩阵">
+              <InterviewPrepMatrix items={resource.interviewPrepMatrix} />
+            </DetailSection>
+          ) : null}
+
+          {hasItems(resource.behavioralStories) ? (
+            <DetailSection id="story-library" title="行为面试故事库">
+              <BehavioralStoryLibrary stories={resource.behavioralStories} />
+            </DetailSection>
+          ) : null}
+
+          {hasItems(resource.weeklyJobPlan) ? (
+            <DetailSection id="action-plan" title="每周求职行动计划">
+              <WeeklyJobPlan weeks={resource.weeklyJobPlan} />
+            </DetailSection>
+          ) : null}
+
+          {hasItems(resource.interviewReviewTemplate) ? (
+            <DetailSection id="review-template" title="面试复盘模板">
+              <InterviewReviewTemplate fields={resource.interviewReviewTemplate} />
             </DetailSection>
           ) : null}
 
