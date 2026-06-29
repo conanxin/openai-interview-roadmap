@@ -171,6 +171,20 @@ V6C 新增 12 周课程总报告 Markdown，把课程学习、项目实践和面
 - 自动生成下一步行动建议，帮助判断应该回到当前周、进入 Interview Bank、补 Mini GPT 模块或完成 Mock Interview。
 - 可复制到 GitHub、Notion、周报或个人学习日志。
 
+## V7A：Portfolio & Resume Toolkit
+
+V7A 新增 `#/portfolio`，把 Mini GPT 项目、AI Lab 面试训练记录和 12 周学习成果转化为可用于投递和面试的输出材料。
+
+新增能力：
+
+- 项目作品集展示：覆盖 `openai-interview-roadmap` 和 `mini-gpt-from-scratch` 的定位、技术栈、亮点、可展示能力和链接。
+- 多岗位 resume bullets：支持 Research Engineer、GenAI Application Engineer、AI Product / Tooling Engineer 三类目标岗位。
+- 项目 Pitch：支持 30 秒、3 分钟和深挖版本，分别覆盖学习站和 Mini GPT 代码仓库。
+- Behavioral STAR stories：提供 6 个故事模板，并支持在页面内填写个人版本。
+- 面试前 checklist：追踪项目表达、技术概念、mock interview、错题复盘和下一轮补强。
+- Markdown 导出：支持简历 bullet、项目 pitch、Behavioral stories 和完整 Portfolio Packet。
+- 本地草稿保存：继续使用 `openai-roadmap-progress.portfolioDrafts`，不需要后端和账号。
+
 ## Related Projects
 
 - `mini-gpt-from-scratch`：真实 Python + PyTorch Mini GPT 代码作品集，https://github.com/conanxin/mini-gpt-from-scratch
@@ -178,8 +192,10 @@ V6C 新增 12 周课程总报告 Markdown，把课程学习、项目实践和面
 
 后续计划：
 
-- V7：简历 / 项目展示 / mock interview 工具区
+- V7B：简历项目段落优化器
+- V7C：面试故事库深度编辑器
 - V8：公开学习日志与周报模板
+- V9：多语言版本 / 英文站点
 
 ## 项目目的
 

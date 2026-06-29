@@ -15,12 +15,27 @@ import {
   weeklyPlanItems,
 } from './data/progress'
 import { mockInterviewModes, mockReviewPrompts } from './data/mockInterview'
+import {
+  behavioralStoryTemplates,
+  interviewChecklistItems,
+  portfolioExportTemplates,
+  portfolioProjects,
+  projectPitchTemplates,
+  resumeBulletTemplates,
+} from './data/portfolio'
 import { projectsBySlug } from './data/projects'
 import { interviewQuestions, questionCategories } from './data/questions'
 import { resources, resourcesBySlug } from './data/resources'
 import './App.css'
 
 const STORAGE_KEY = 'openai-roadmap-progress'
+
+const emptyPortfolioDrafts = {
+  selectedRole: 'research-engineer',
+  behavioralStories: {},
+  interviewChecklist: {},
+  lastPortfolioExportedAt: null,
+}
 
 const emptyProgress = {
   resourceCompletion: {},
@@ -33,6 +48,7 @@ const emptyProgress = {
   lastExportedAt: null,
   courseTasks: {},
   activeCourseWeek: null,
+  portfolioDrafts: emptyPortfolioDrafts,
 }
 
 const navItems = [
@@ -76,7 +92,7 @@ function getRouteFromHash() {
   const resourceMatch = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
   const projectMatch = window.location.hash.match(/^#\/projects\/([^/?#]+)/)
   const courseWeekMatch = window.location.hash.match(/^#\/course\/week\/(\d{1,2})(?:[/?#]|$)/)
-  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank|mock-interview|review|course)(?:[/?#]|$)/)
+  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank|mock-interview|review|course|portfolio)(?:[/?#]|$)/)
 
   return {
     resourceSlug: resourceMatch ? decodeURIComponent(resourceMatch[1]) : null,
@@ -101,16 +117,37 @@ function useHashRoute() {
   return route
 }
 
+function normalizeProgress(value = {}) {
+  const portfolioDrafts = value.portfolioDrafts || {}
+
+  return {
+    ...emptyProgress,
+    ...value,
+    portfolioDrafts: {
+      ...emptyPortfolioDrafts,
+      ...portfolioDrafts,
+      behavioralStories: {
+        ...emptyPortfolioDrafts.behavioralStories,
+        ...portfolioDrafts.behavioralStories,
+      },
+      interviewChecklist: {
+        ...emptyPortfolioDrafts.interviewChecklist,
+        ...portfolioDrafts.interviewChecklist,
+      },
+    },
+  }
+}
+
 function readStoredProgress() {
   if (typeof window === 'undefined') {
-    return emptyProgress
+    return normalizeProgress()
   }
 
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    return stored ? { ...emptyProgress, ...JSON.parse(stored) } : emptyProgress
+    return stored ? normalizeProgress(JSON.parse(stored)) : normalizeProgress()
   } catch {
-    return emptyProgress
+    return normalizeProgress()
   }
 }
 
@@ -184,15 +221,65 @@ function useLocalProgress() {
     }))
   }
 
+  const setPortfolioRole = (roleId) => {
+    setProgress((current) => ({
+      ...current,
+      portfolioDrafts: {
+        ...current.portfolioDrafts,
+        selectedRole: roleId,
+      },
+    }))
+  }
+
+  const updatePortfolioStory = (storyId, value) => {
+    setProgress((current) => ({
+      ...current,
+      portfolioDrafts: {
+        ...current.portfolioDrafts,
+        behavioralStories: {
+          ...current.portfolioDrafts.behavioralStories,
+          [storyId]: value,
+        },
+      },
+    }))
+  }
+
+  const togglePortfolioChecklist = (id, checked) => {
+    setProgress((current) => ({
+      ...current,
+      portfolioDrafts: {
+        ...current.portfolioDrafts,
+        interviewChecklist: {
+          ...current.portfolioDrafts.interviewChecklist,
+          [id]: checked,
+        },
+      },
+    }))
+  }
+
+  const recordPortfolioExport = () => {
+    setProgress((current) => ({
+      ...current,
+      portfolioDrafts: {
+        ...current.portfolioDrafts,
+        lastPortfolioExportedAt: new Date().toISOString(),
+      },
+    }))
+  }
+
   return {
     progress,
     recordExport,
+    recordPortfolioExport,
     resetProgress,
     saveMockInterview,
     setActiveCourseWeek,
+    setPortfolioRole,
     toggleCourseTask,
+    togglePortfolioChecklist,
     toggleProgress,
     toggleQuestionMastered,
+    updatePortfolioStory,
   }
 }
 
@@ -860,6 +947,138 @@ function buildCourseTotalReportMarkdown(progress) {
   ].join('\n')
 }
 
+function getSelectedResumeRole(drafts) {
+  return resumeBulletTemplates.find((role) => role.id === drafts.selectedRole) || resumeBulletTemplates[0]
+}
+
+function buildResumeBulletsMarkdown(drafts) {
+  const role = getSelectedResumeRole(drafts)
+
+  return [
+    `# Resume Bullets：${role.label}`,
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    '',
+    '## 目标岗位',
+    role.label,
+    '',
+    '## 项目 Bullet',
+    ...role.bullets.map((bullet) => `- ${bullet}`),
+    '',
+    '## 技术关键词',
+    role.keywords.join(' / '),
+  ].join('\n')
+}
+
+function formatPitchSections(pitch) {
+  return [
+    `### ${pitch.title}`,
+    '',
+    `适用场景：${pitch.useCase}`,
+    '',
+    `- 背景：${pitch.sections.background}`,
+    `- 目标：${pitch.sections.goal}`,
+    `- 做了什么：${pitch.sections.work}`,
+    `- 技术点：${pitch.sections.technical}`,
+    `- 结果：${pitch.sections.result}`,
+    `- 下一步：${pitch.sections.next}`,
+    '',
+    '可能追问：',
+    ...pitch.followUps.map((item) => `- ${item}`),
+  ].join('\n')
+}
+
+function buildProjectPitchMarkdown() {
+  const projectBlocks = projectPitchTemplates.map((project) => [
+    `## ${project.projectName}`,
+    '',
+    ...project.pitches.map(formatPitchSections),
+  ].join('\n'))
+
+  return [
+    '# Project Pitch Packet',
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    '',
+    ...projectBlocks,
+  ].join('\n')
+}
+
+function buildBehavioralStoriesMarkdown(drafts) {
+  const storyBlocks = behavioralStoryTemplates.map((story) => [
+    `## ${story.title}`,
+    '',
+    `- Situation：${story.situation}`,
+    `- Task：${story.task}`,
+    `- Action：${story.action}`,
+    `- Result：${story.result}`,
+    `- 可以突出什么能力：${story.signal}`,
+    '',
+    '### 用户版本',
+    drafts.behavioralStories[story.id]?.trim() || '待填写',
+    '',
+    '### 替换提示',
+    ...story.prompts.map((prompt) => `- ${prompt}`),
+  ].join('\n'))
+
+  return [
+    '# Behavioral STAR Stories',
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    '',
+    ...storyBlocks,
+  ].join('\n')
+}
+
+function buildPortfolioPacketMarkdown(drafts) {
+  const role = getSelectedResumeRole(drafts)
+  const projectLines = portfolioProjects.flatMap((project) => [
+    `## ${project.name}`,
+    `- 定位：${project.positioning}`,
+    `- 技术栈：${project.stack.join(' / ')}`,
+    '- 亮点：',
+    ...project.highlights.map((item) => `  - ${item}`),
+    '- 可展示能力：',
+    ...project.capabilities.map((item) => `  - ${item}`),
+    '- 链接：',
+    ...project.links.map((link) => `  - [${link.label}](${link.href})`),
+    '',
+  ])
+  const checklistLines = interviewChecklistItems.map((item) => markdownCheckbox(item.label, drafts.interviewChecklist[item.id]))
+
+  return [
+    '# Portfolio & Resume Packet',
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    '',
+    '# 项目列表',
+    ...projectLines,
+    '# Resume Bullets',
+    `目标岗位：${role.label}`,
+    '',
+    ...role.bullets.map((bullet) => `- ${bullet}`),
+    '',
+    '# Project Pitch',
+    ...projectPitchTemplates.map((project) => [
+      `## ${project.projectName}`,
+      ...project.pitches.map((pitch) => `- ${pitch.title}：${pitch.sections.goal}`),
+    ].join('\n')),
+    '',
+    '# Behavioral Stories',
+    ...behavioralStoryTemplates.map((story) => [
+      `## ${story.title}`,
+      drafts.behavioralStories[story.id]?.trim() || '待填写',
+    ].join('\n')),
+    '',
+    '# 面试前 checklist',
+    ...checklistLines,
+    '',
+    '# 相关链接',
+    '- [openai-interview-roadmap](https://conanxin.github.io/openai-interview-roadmap/)',
+    '- [mini-gpt-from-scratch](https://github.com/conanxin/mini-gpt-from-scratch)',
+  ].join('\n')
+}
+
 function ProgressCheckbox({ checked, label, onChange }) {
   return (
     <label className={checked ? 'progress-checkbox is-checked' : 'progress-checkbox'}>
@@ -967,6 +1186,9 @@ function DashboardPage({ progress, onToggle, onReset }) {
           </a>
           <a className="button secondary" href="#/review?export=course">
             导出课程总报告
+          </a>
+          <a className="button secondary" href="#/portfolio">
+            打开 Portfolio Toolkit
           </a>
           <a className="button secondary" href="#/review">
             查看错题复盘
@@ -1467,8 +1689,8 @@ function ReviewSummary({ progress, reviewQuestions }) {
   )
 }
 
-function MarkdownExportPanel({ markdown, onCopy, onSelect, selectedType, status }) {
-  const exportOptions = [
+function MarkdownExportPanel({ markdown, onCopy, onSelect, options, selectedType, status }) {
+  const exportOptions = options || [
     { id: 'progress', label: '导出学习进度 Markdown' },
     { id: 'wrong', label: '导出错题本 Markdown' },
     { id: 'mock', label: '导出最近一次 Mock Interview 复盘 Markdown' },
@@ -1498,6 +1720,283 @@ function MarkdownExportPanel({ markdown, onCopy, onSelect, selectedType, status 
       {status ? <div className="copy-status">{status}</div> : null}
       <textarea className="markdown-output" readOnly value={markdown} aria-label="Markdown 导出内容" />
     </div>
+  )
+}
+
+function PortfolioProjects() {
+  return (
+    <div className="portfolio-project-grid">
+      {portfolioProjects.map((project) => (
+        <article className="portfolio-project-card" key={project.id}>
+          <p>{project.positioning}</p>
+          <h3>{project.name}</h3>
+          <div className="portfolio-tag-row">
+            {project.stack.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+          <dl>
+            <div>
+              <dt>亮点</dt>
+              <dd>
+                <BulletList items={project.highlights} />
+              </dd>
+            </div>
+            <div>
+              <dt>可展示能力</dt>
+              <dd>
+                <BulletList items={project.capabilities} />
+              </dd>
+            </div>
+          </dl>
+          <div className="detail-actions">
+            {project.links.map((link, index) => (
+              <a className={index === 0 ? 'button primary' : 'button secondary'} href={link.href} key={link.href} target={link.href.startsWith('http') ? '_blank' : undefined} rel={link.href.startsWith('http') ? 'noreferrer' : undefined}>
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function ResumeBulletBuilder({ drafts, onSelectRole }) {
+  const selectedRole = getSelectedResumeRole(drafts)
+
+  return (
+    <div className="portfolio-tool-stack">
+      <div className="question-filter-row portfolio-role-row" role="tablist" aria-label="目标岗位选择">
+        {resumeBulletTemplates.map((role) => (
+          <button
+            className={selectedRole.id === role.id ? 'is-active' : ''}
+            key={role.id}
+            type="button"
+            onClick={() => onSelectRole(role.id)}
+          >
+            {role.label}
+          </button>
+        ))}
+      </div>
+      <article className="resume-bullet-card">
+        <p>目标岗位：{selectedRole.label}</p>
+        <BulletList items={selectedRole.bullets} />
+        <div className="portfolio-tag-row">
+          {selectedRole.keywords.map((keyword) => (
+            <span key={keyword}>{keyword}</span>
+          ))}
+        </div>
+      </article>
+    </div>
+  )
+}
+
+function ProjectPitchToolkit() {
+  return (
+    <div className="portfolio-pitch-grid">
+      {projectPitchTemplates.map((project) => (
+        <article className="portfolio-pitch-project" key={project.projectId}>
+          <h3>{project.projectName}</h3>
+          <div className="portfolio-pitch-list">
+            {project.pitches.map((pitch) => (
+              <article className="portfolio-pitch-card" key={`${project.projectId}-${pitch.id}`}>
+                <p>{pitch.title}</p>
+                <strong>{pitch.useCase}</strong>
+                <dl>
+                  <div>
+                    <dt>背景</dt>
+                    <dd>{pitch.sections.background}</dd>
+                  </div>
+                  <div>
+                    <dt>目标</dt>
+                    <dd>{pitch.sections.goal}</dd>
+                  </div>
+                  <div>
+                    <dt>做了什么</dt>
+                    <dd>{pitch.sections.work}</dd>
+                  </div>
+                  <div>
+                    <dt>技术点</dt>
+                    <dd>{pitch.sections.technical}</dd>
+                  </div>
+                  <div>
+                    <dt>结果</dt>
+                    <dd>{pitch.sections.result}</dd>
+                  </div>
+                  <div>
+                    <dt>下一步</dt>
+                    <dd>{pitch.sections.next}</dd>
+                  </div>
+                </dl>
+                <div className="portfolio-followups">
+                  <span>可能追问</span>
+                  <BulletList items={pitch.followUps} />
+                </div>
+              </article>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function BehavioralStoryEditor({ drafts, onUpdateStory }) {
+  return (
+    <div className="portfolio-story-grid">
+      {behavioralStoryTemplates.map((story) => (
+        <article className="portfolio-story-card" key={story.id}>
+          <h3>{story.title}</h3>
+          <dl>
+            <div>
+              <dt>Situation</dt>
+              <dd>{story.situation}</dd>
+            </div>
+            <div>
+              <dt>Task</dt>
+              <dd>{story.task}</dd>
+            </div>
+            <div>
+              <dt>Action</dt>
+              <dd>{story.action}</dd>
+            </div>
+            <div>
+              <dt>Result</dt>
+              <dd>{story.result}</dd>
+            </div>
+            <div>
+              <dt>可以突出什么能力</dt>
+              <dd>{story.signal}</dd>
+            </div>
+          </dl>
+          <div className="portfolio-followups">
+            <span>替换成你的经历时，先回答</span>
+            <BulletList items={story.prompts} />
+          </div>
+          <textarea
+            className="portfolio-story-input"
+            value={drafts.behavioralStories[story.id] || ''}
+            placeholder="在这里写你的 STAR 版本，页面会自动保存到本地。"
+            onChange={(event) => onUpdateStory(story.id, event.target.value)}
+          />
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function PortfolioInterviewChecklist({ drafts, onToggleChecklist }) {
+  return (
+    <div className="portfolio-checklist">
+      {interviewChecklistItems.map((item) => (
+        <label className={drafts.interviewChecklist[item.id] ? 'portfolio-check-item is-complete' : 'portfolio-check-item'} key={item.id}>
+          <input
+            type="checkbox"
+            checked={Boolean(drafts.interviewChecklist[item.id])}
+            onChange={(event) => onToggleChecklist(item.id, event.target.checked)}
+          />
+          <span>{item.label}</span>
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function PortfolioPage({ progress, onRecordExport, onSelectRole, onToggleChecklist, onUpdateStory }) {
+  const drafts = progress.portfolioDrafts
+  const [exportType, setExportType] = useState('resume')
+  const [copyStatus, setCopyStatus] = useState('')
+  const markdownByType = {
+    resume: buildResumeBulletsMarkdown(drafts),
+    pitch: buildProjectPitchMarkdown(),
+    stories: buildBehavioralStoriesMarkdown(drafts),
+    packet: buildPortfolioPacketMarkdown(drafts),
+  }
+  const selectedMarkdown = markdownByType[exportType]
+
+  const selectExportType = (type) => {
+    setExportType(type)
+    setCopyStatus('已生成，可复制或手动选中文本')
+    onRecordExport()
+  }
+
+  const copyMarkdown = async () => {
+    onRecordExport()
+    if (!navigator.clipboard?.writeText) {
+      setCopyStatus('已生成，可手动复制')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(selectedMarkdown)
+      setCopyStatus('已复制')
+    } catch {
+      setCopyStatus('复制失败，可手动复制')
+    }
+  }
+
+  return (
+    <main className="detail-page portfolio-page">
+      <a className="back-link" href="#top">
+        返回首页
+      </a>
+      <section className="detail-hero">
+        <p>V7A Portfolio Toolkit</p>
+        <h1>Portfolio & Resume Toolkit</h1>
+        <span>把学习项目变成可以投递、面试和展示的求职材料。</span>
+        <div className="detail-actions">
+          <a className="button primary" href="#portfolio-resume">
+            生成简历项目段落
+          </a>
+          <a className="button secondary" href="#portfolio-pitch">
+            准备项目 Pitch
+          </a>
+          <a className="button secondary" href="#portfolio-stories">
+            准备 Behavioral Stories
+          </a>
+          <a className="button secondary" href="#portfolio-export">
+            导出求职材料 Markdown
+          </a>
+        </div>
+      </section>
+
+      <div className="project-detail-content">
+        <DetailSection id="portfolio-projects" title="项目作品集">
+          <PortfolioProjects />
+        </DetailSection>
+
+        <DetailSection id="portfolio-resume" title="简历 Bullet 生成区">
+          <ResumeBulletBuilder drafts={drafts} onSelectRole={onSelectRole} />
+        </DetailSection>
+
+        <DetailSection id="portfolio-pitch" title="项目 Pitch 区">
+          <ProjectPitchToolkit />
+        </DetailSection>
+
+        <DetailSection id="portfolio-stories" title="Behavioral Stories 区">
+          <BehavioralStoryEditor drafts={drafts} onUpdateStory={onUpdateStory} />
+        </DetailSection>
+
+        <DetailSection id="portfolio-checklist" title="面试前 Checklist">
+          <PortfolioInterviewChecklist drafts={drafts} onToggleChecklist={onToggleChecklist} />
+        </DetailSection>
+
+        <DetailSection id="portfolio-export" title="Markdown 导出区">
+          <MarkdownExportPanel
+            markdown={selectedMarkdown}
+            options={portfolioExportTemplates}
+            selectedType={exportType}
+            status={copyStatus}
+            onCopy={copyMarkdown}
+            onSelect={selectExportType}
+          />
+          <div className="review-summary-note portfolio-export-note">
+            <p>最近一次 Portfolio 导出时间：{formatDateTime(drafts.lastPortfolioExportedAt)}</p>
+          </div>
+        </DetailSection>
+      </div>
+    </main>
   )
 }
 
@@ -1587,6 +2086,12 @@ function ReviewPage({ progress, onRecordExport, onToggleMastered }) {
             onSelect={selectExportType}
           />
         </DetailSection>
+
+        <section className="project-next-callout" aria-label="求职材料入口">
+          <p>Portfolio Output</p>
+          <h2>完成复盘后，可以把训练记录、项目内容和故事库整理成求职材料。</h2>
+          <a href="#/portfolio">生成求职材料</a>
+        </section>
       </div>
     </main>
   )
@@ -1759,6 +2264,9 @@ function CoursePage({ progress, onSetActiveWeek, onToggleTask }) {
           <a className="button secondary" href="#/review?export=course">
             生成课程总报告
           </a>
+          <a className="button secondary" href="#/portfolio">
+            生成求职材料
+          </a>
         </div>
       </section>
 
@@ -1769,6 +2277,7 @@ function CoursePage({ progress, onSetActiveWeek, onToggleTask }) {
           <p>Review Loop</p>
           <h2>完成每周学习后，建议前往错题复盘页导出学习进度 Markdown。</h2>
           <a href="#/review">导出复盘请前往 #/review</a>
+          <a href="#/portfolio">生成求职材料</a>
         </section>
       </div>
     </main>
@@ -2353,6 +2862,9 @@ function HomePage() {
             <a className="button secondary" href="#/course">
               进入 12 周课程
             </a>
+            <a className="button secondary" href="#/portfolio">
+              作品集工具
+            </a>
           </div>
         </div>
         <div className="hero-visual">
@@ -2662,12 +3174,16 @@ function App() {
   const {
     progress,
     recordExport,
+    recordPortfolioExport,
     resetProgress,
     saveMockInterview,
     setActiveCourseWeek,
+    setPortfolioRole,
     toggleCourseTask,
+    togglePortfolioChecklist,
     toggleProgress,
     toggleQuestionMastered,
+    updatePortfolioStory,
   } = useLocalProgress()
   const selectedResource = resourceSlug ? resourcesBySlug[resourceSlug] : null
   const selectedProject = projectSlug ? projectsBySlug[projectSlug] : null
@@ -2717,6 +3233,14 @@ function App() {
           week={selectedCourseWeek}
           onSetActiveWeek={setActiveCourseWeek}
           onToggleTask={toggleCourseTask}
+        />
+      ) : page === 'portfolio' ? (
+        <PortfolioPage
+          progress={progress}
+          onRecordExport={recordPortfolioExport}
+          onSelectRole={setPortfolioRole}
+          onToggleChecklist={togglePortfolioChecklist}
+          onUpdateStory={updatePortfolioStory}
         />
       ) : projectSlug ? (
         <ProjectDetail project={selectedProject} />
