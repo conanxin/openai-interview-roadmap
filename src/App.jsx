@@ -7,6 +7,7 @@ import {
   timelineSteps,
   weeks,
 } from './data'
+import { projectsBySlug } from './data/projects'
 import { resources, resourcesBySlug } from './data/resources'
 import './App.css'
 
@@ -47,24 +48,29 @@ function getDetailNavItems(resource) {
   return baseDetailNavItems.filter((item) => !item.field || hasItems(resource[item.field]))
 }
 
-function getResourceSlugFromHash() {
-  const match = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
-  return match ? decodeURIComponent(match[1]) : null
+function getRouteFromHash() {
+  const resourceMatch = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
+  const projectMatch = window.location.hash.match(/^#\/projects\/([^/?#]+)/)
+
+  return {
+    resourceSlug: resourceMatch ? decodeURIComponent(resourceMatch[1]) : null,
+    projectSlug: projectMatch ? decodeURIComponent(projectMatch[1]) : null,
+  }
 }
 
-function useResourceRoute() {
-  const [slug, setSlug] = useState(getResourceSlugFromHash)
+function useHashRoute() {
+  const [route, setRoute] = useState(getRouteFromHash)
 
   useEffect(() => {
     const handleHashChange = () => {
-      setSlug(getResourceSlugFromHash())
+      setRoute(getRouteFromHash())
     }
 
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
-  return slug
+  return route
 }
 
 function Header() {
@@ -307,6 +313,72 @@ function CompletionChecklist({ items }) {
   )
 }
 
+function ProjectModuleRoadmap({ modules }) {
+  return (
+    <div className="module-roadmap">
+      {modules.map((item) => (
+        <article className="module-card" key={item.module}>
+          <p>{item.module}</p>
+          <h3>{item.title}</h3>
+          <dl>
+            <div>
+              <dt>任务</dt>
+              <dd>{item.task}</dd>
+            </div>
+            <div>
+              <dt>对应学习页</dt>
+              <dd className="module-links">
+                {item.resources.map((resource) => (
+                  <a key={resource.href} href={resource.href}>
+                    {resource.label}
+                  </a>
+                ))}
+              </dd>
+            </div>
+            <div>
+              <dt>产出</dt>
+              <dd>{item.outputs.join('、')}</dd>
+            </div>
+          </dl>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function RepoTree({ lines }) {
+  return (
+    <pre className="repo-tree" aria-label="推荐项目目录结构">
+      <code>{lines.join('\n')}</code>
+    </pre>
+  )
+}
+
+function RelatedLearningPages({ resources }) {
+  return (
+    <div className="related-learning-grid">
+      {resources.map((resource) => (
+        <a className="related-learning-card" href={resource.href} key={resource.href}>
+          {resource.label}
+        </a>
+      ))}
+    </div>
+  )
+}
+
+function PitchCards({ items }) {
+  return (
+    <div className="pitch-card-list">
+      {items.map((item) => (
+        <article className="pitch-card" key={item.title}>
+          <h3>{item.title}</h3>
+          <p>{item.body}</p>
+        </article>
+      ))}
+    </div>
+  )
+}
+
 function scrollToDetailSection(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
@@ -407,6 +479,14 @@ function PracticeProject() {
         <p className="project-copy">
           目标不是追求大参数量，而是把每个关键组件写到自己能解释 shape、梯度、采样策略和失败模式。
         </p>
+        <div className="project-actions">
+          <a className="resource-link primary-link" href="#/projects/mini-gpt">
+            开始项目
+          </a>
+          <a className="resource-link secondary-link" href="#/resources/transformer-from-scratch">
+            查看对应学习页
+          </a>
+        </div>
       </div>
       <div className="project-list" aria-label="Mini GPT 实践任务">
         {projectTasks.map((task) => (
@@ -502,6 +582,79 @@ function HomePage() {
       <PracticeProject />
       <WeeklyPlan />
       <ProgressChecklist />
+    </main>
+  )
+}
+
+function ProjectDetail({ project }) {
+  if (!project) {
+    return (
+      <main className="detail-page">
+        <a className="back-link" href="#top">
+          返回首页
+        </a>
+        <section className="detail-hero">
+          <p>Project Not Found</p>
+          <h1>没有找到这个项目页</h1>
+          <span>请回到首页实践项目区，选择一个已有的站内项目页。</span>
+        </section>
+      </main>
+    )
+  }
+
+  return (
+    <main className="detail-page project-detail-page">
+      <a className="back-link" href="#top">
+        返回首页
+      </a>
+
+      <section className="detail-hero project-hero">
+        <p>{project.stage}</p>
+        <h1>{project.name}</h1>
+        <span>{project.subtitle}</span>
+        <div className="project-hero-copy">
+          <p>{project.description}</p>
+        </div>
+        <div className="detail-actions">
+          <button className="button primary" type="button" onClick={() => scrollToDetailSection('project-modules')}>
+            查看模块路线图
+          </button>
+          <a className="button secondary" href="#/resources/transformer-from-scratch">
+            对应学习页
+          </a>
+        </div>
+      </section>
+
+      <div className="project-detail-content">
+        <DetailSection id="project-goals" title="项目目标：完成后应该具备的能力">
+          <BulletList items={project.goals} />
+        </DetailSection>
+
+        <DetailSection id="project-modules" title="模块路线图">
+          <ProjectModuleRoadmap modules={project.modules} />
+        </DetailSection>
+
+        <DetailSection id="project-repo" title="项目目录建议">
+          <RepoTree lines={project.repoTree} />
+        </DetailSection>
+
+        <DetailSection id="project-resources" title="相关学习页">
+          <RelatedLearningPages resources={project.relatedResources} />
+        </DetailSection>
+
+        <DetailSection id="project-checklist" title="项目完成 checklist">
+          <CompletionChecklist items={project.checklist} />
+        </DetailSection>
+
+        <DetailSection id="project-pitch" title="如何向面试官讲这个项目">
+          <PitchCards items={project.pitch} />
+        </DetailSection>
+
+        <section className="project-next-callout" aria-label="V4B 后续说明">
+          <p>V4B 下一步</p>
+          <h2>{project.nextStep}</h2>
+        </section>
+      </div>
     </main>
   )
 }
@@ -692,11 +845,12 @@ function SiteFooter() {
 }
 
 function App() {
-  const resourceSlug = useResourceRoute()
+  const { resourceSlug, projectSlug } = useHashRoute()
   const selectedResource = resourceSlug ? resourcesBySlug[resourceSlug] : null
+  const selectedProject = projectSlug ? projectsBySlug[projectSlug] : null
 
   useEffect(() => {
-    if (resourceSlug) {
+    if (resourceSlug || projectSlug) {
       window.scrollTo(0, 0)
       return
     }
@@ -705,12 +859,18 @@ function App() {
     if (anchorId) {
       requestAnimationFrame(() => document.getElementById(anchorId)?.scrollIntoView())
     }
-  }, [resourceSlug])
+  }, [resourceSlug, projectSlug])
 
   return (
     <div id="top" className="app-shell">
       <Header />
-      {resourceSlug ? <ResourceDetail resource={selectedResource} /> : <HomePage />}
+      {projectSlug ? (
+        <ProjectDetail project={selectedProject} />
+      ) : resourceSlug ? (
+        <ResourceDetail resource={selectedResource} />
+      ) : (
+        <HomePage />
+      )}
       <SiteFooter />
     </div>
   )

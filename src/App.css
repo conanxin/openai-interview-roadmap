@@ -119,9 +119,11 @@
   justify-content: center;
   min-height: 46px;
   padding: 0 20px;
+  border: 1px solid transparent;
   border-radius: 8px;
   font-size: 15px;
   font-weight: 800;
+  cursor: pointer;
   text-decoration: none;
   transition:
     transform 160ms ease,
@@ -408,6 +410,17 @@
   background: var(--amber);
   border-radius: 999px;
   box-shadow: 0 0 0 5px rgba(241, 167, 46, 0.18);
+}
+
+.project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.project-actions .resource-link {
+  margin-top: 0;
 }
 
 .week-grid {
@@ -860,6 +873,168 @@
   margin-top: 22px;
 }
 
+.project-detail-content {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.project-hero-copy p {
+  max-width: 880px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.85;
+}
+
+.module-roadmap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.module-card,
+.pitch-card {
+  padding: 18px;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.module-card > p {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 10px;
+  padding: 5px 10px;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+  background: var(--teal-soft);
+  border: 1px solid rgba(13, 126, 118, 0.16);
+  border-radius: 8px;
+}
+
+.module-card h3,
+.pitch-card h3 {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.module-card dl {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+
+.module-card dl div {
+  display: grid;
+  gap: 5px;
+}
+
+.module-card dt {
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.module-card dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.module-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.module-links a,
+.related-learning-card {
+  color: var(--teal);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.module-links a {
+  padding: 4px 8px;
+  background: rgba(13, 126, 118, 0.08);
+  border-radius: 8px;
+}
+
+.module-links a:hover,
+.related-learning-card:hover {
+  text-decoration: underline;
+}
+
+.repo-tree {
+  margin: 18px 0 0;
+  padding: 18px;
+  max-width: 100%;
+  overflow-x: auto;
+  color: #eaf7f5;
+  font-size: 14px;
+  line-height: 1.75;
+  background: #17312f;
+  border-radius: 8px;
+}
+
+.repo-tree code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  white-space: pre;
+}
+
+.related-learning-grid,
+.pitch-card-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.related-learning-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.related-learning-card {
+  display: flex;
+  align-items: center;
+  min-height: 58px;
+  padding: 14px;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.pitch-card p {
+  margin-top: 10px;
+}
+
+.project-next-callout {
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(235, 248, 246, 0.95), rgba(255, 250, 238, 0.92));
+  border: 1px solid rgba(13, 126, 118, 0.16);
+  border-radius: 8px;
+}
+
+.project-next-callout p {
+  margin: 0;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.project-next-callout h2 {
+  margin: 10px 0 0;
+  color: var(--ink-strong);
+  font-size: 22px;
+  line-height: 1.4;
+}
+
 @media (max-width: 1180px) {
   .capability-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -867,7 +1042,8 @@
 
   .timeline,
   .resource-grid,
-  .week-grid {
+  .week-grid,
+  .related-learning-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -951,6 +1127,8 @@
   .week-grid,
   .checklist,
   .project-list,
+  .module-roadmap,
+  .related-learning-grid,
   .prep-matrix,
   .job-plan-list {
     grid-template-columns: 1fr;

@@ -73,9 +73,21 @@ V3D 把 `#/resources/alisa-job-search` 从中文导读增强为 OpenAI / AI Lab 
 - 行为面试故事库：debug、失败调整、协作冲突、快速学习、AI 项目 insight 五类模板。
 - 4 周求职行动计划、面试复盘模板、自测题和学习完成 checklist。
 
+## V4A：Mini GPT from Scratch 项目联动页
+
+V4A 新增站内项目页 `#/projects/mini-gpt`，把学习站内容联动到一个可实践的 Mini GPT from Scratch 项目路线图。
+
+页面包括：
+
+- Mini GPT 项目目标：decoder-only Transformer、causal self-attention、training loop、generation、sampling、debug 和测试。
+- 8 个项目模块：Tokenizer、Embedding、Causal Self-Attention、Transformer Block、Training Loop、Generation、Testing、项目展示。
+- 推荐代码目录结构：`src/mini_gpt/`、`tests/`、`notes/`、`scripts/`。
+- 相关学习页联动：CS336、Illustrated GPT-2、Self-Attention、Backpropagation、Transformer from Scratch、Scaling、Alisa Job Search Notes。
+- 项目完成 checklist 和“如何向面试官讲这个项目”的 30 秒 / 3 分钟展示模板。
+
 后续计划：
 
-- V4：Mini GPT from Scratch 独立代码项目联动
+- V4B：创建 mini-gpt-from-scratch 独立代码仓库
 - V5：学习进度与面试题库
 - V6：连续课程路径和学习 dashboard
 - V7：简历 / 项目展示 / mock interview 工具区
