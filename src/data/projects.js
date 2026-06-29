@@ -4,6 +4,8 @@ export const projectDetails = [
     name: 'Mini GPT from Scratch',
     stage: 'V4A 实践项目路线图',
     subtitle: '把语言模型知识转化为可运行代码、可解释项目和可展示作品集。',
+    repoUrl: 'https://github.com/conanxin/mini-gpt-from-scratch',
+    versionUrl: 'https://github.com/conanxin/mini-gpt-from-scratch/tree/v0.2.0',
     description:
       '这个项目的目标不是训练一个强模型，而是通过从零实现一个小型 GPT，掌握 tokenizer、embedding、causal self-attention、Transformer block、training loop、generation、sampling、debug 和测试。',
     goals: [
@@ -129,6 +131,26 @@ export const projectDetails = [
       { label: 'Scaling', href: '#/resources/scaling' },
       { label: 'Alisa Job Search Notes', href: '#/resources/alisa-job-search' },
     ],
+    codeCapabilities: [
+      'character-level tokenizer',
+      'shifted batch data loader',
+      'causal self-attention',
+      'Transformer block',
+      'MiniGPT model',
+      'tiny training loop',
+      'greedy / temperature / top-k / top-p sampling',
+      'checkpoint save/load',
+      'train/eval loss',
+      'loss history CSV',
+      'pytest tests，10 passed',
+    ],
+    runCommands: [
+      'cd mini-gpt-from-scratch',
+      'pip install -e ".[dev]"',
+      'pytest',
+      'python scripts/train_tiny.py',
+      'python scripts/sample.py',
+    ],
     checklist: [
       '我能解释 Mini GPT 的整体数据流。',
       '我能写出 causal self-attention。',
@@ -163,7 +185,7 @@ export const projectDetails = [
       },
     ],
     nextStep:
-      '下一步可以创建独立代码仓库 mini-gpt-from-scratch，并把本页路线中的模块逐步实现为真实代码。',
+      '代码仓库已创建：mini-gpt-from-scratch 已完成 v0.2，可作为本学习站的真实代码作品集继续迭代。',
   },
 ]
 

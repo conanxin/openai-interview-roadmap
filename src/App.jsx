@@ -7,9 +7,27 @@ import {
   timelineSteps,
   weeks,
 } from './data'
+import {
+  interviewProgressItems,
+  miniGptProgressItems,
+  resourcesProgressItems,
+  weeklyPlanItems,
+} from './data/progress'
 import { projectsBySlug } from './data/projects'
+import { interviewQuestions, questionCategories } from './data/questions'
 import { resources, resourcesBySlug } from './data/resources'
 import './App.css'
+
+const STORAGE_KEY = 'openai-roadmap-progress'
+
+const emptyProgress = {
+  resourceCompletion: {},
+  miniGptCompletion: {},
+  weeklyCompletion: {},
+  interviewCompletion: {},
+  questionPracticed: {},
+  questionMastered: {},
+}
 
 const navItems = [
   { label: '能力地图', href: '#capabilities' },
@@ -51,10 +69,12 @@ function getDetailNavItems(resource) {
 function getRouteFromHash() {
   const resourceMatch = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
   const projectMatch = window.location.hash.match(/^#\/projects\/([^/?#]+)/)
+  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank)(?:[/?#]|$)/)
 
   return {
     resourceSlug: resourceMatch ? decodeURIComponent(resourceMatch[1]) : null,
     projectSlug: projectMatch ? decodeURIComponent(projectMatch[1]) : null,
+    page: pageMatch ? pageMatch[1] : null,
   }
 }
 
@@ -71,6 +91,61 @@ function useHashRoute() {
   }, [])
 
   return route
+}
+
+function readStoredProgress() {
+  if (typeof window === 'undefined') {
+    return emptyProgress
+  }
+
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+    return stored ? { ...emptyProgress, ...JSON.parse(stored) } : emptyProgress
+  } catch {
+    return emptyProgress
+  }
+}
+
+function useLocalProgress() {
+  const [progress, setProgress] = useState(readStoredProgress)
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+  }, [progress])
+
+  const toggleProgress = (bucket, id, checked) => {
+    setProgress((current) => ({
+      ...current,
+      [bucket]: {
+        ...current[bucket],
+        [id]: checked,
+      },
+    }))
+  }
+
+  const toggleQuestionMastered = (id, checked) => {
+    setProgress((current) => ({
+      ...current,
+      questionPracticed: checked
+        ? { ...current.questionPracticed, [id]: true }
+        : current.questionPracticed,
+      questionMastered: {
+        ...current.questionMastered,
+        [id]: checked,
+      },
+    }))
+  }
+
+  const resetProgress = () => {
+    if (!window.confirm('确定要重置本项目的本地学习进度吗？')) {
+      return
+    }
+
+    window.localStorage.removeItem(STORAGE_KEY)
+    setProgress(emptyProgress)
+  }
+
+  return { progress, resetProgress, toggleProgress, toggleQuestionMastered }
 }
 
 function Header() {
@@ -313,6 +388,246 @@ function CompletionChecklist({ items }) {
   )
 }
 
+function countCompleted(items, bucket) {
+  return items.filter((item) => bucket[item.id]).length
+}
+
+function ProgressCheckbox({ checked, label, onChange }) {
+  return (
+    <label className={checked ? 'progress-checkbox is-checked' : 'progress-checkbox'}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <span>{label}</span>
+    </label>
+  )
+}
+
+function DashboardStat({ label, value }) {
+  return (
+    <article className="dashboard-stat-card">
+      <p>{label}</p>
+      <strong>{value}</strong>
+    </article>
+  )
+}
+
+function ResourceProgressList({ items, progress, onToggle }) {
+  return (
+    <div className="progress-list">
+      {items.map((item) => (
+        <article className={progress[item.id] ? 'progress-row is-complete' : 'progress-row'} key={item.id}>
+          <ProgressCheckbox
+            checked={Boolean(progress[item.id])}
+            label={item.title}
+            onChange={(checked) => onToggle('resourceCompletion', item.id, checked)}
+          />
+          <div className="progress-meta">
+            <span>{item.type}</span>
+            <a href={item.href}>站内学习</a>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function MiniGptProgressList({ items, progress, onToggle }) {
+  return (
+    <div className="progress-list">
+      {items.map((item) => (
+        <article className={progress[item.id] ? 'progress-row is-complete' : 'progress-row'} key={item.id}>
+          <ProgressCheckbox
+            checked={Boolean(progress[item.id])}
+            label={item.title}
+            onChange={(checked) => onToggle('miniGptCompletion', item.id, checked)}
+          />
+          <div className="progress-meta">
+            <a href={item.projectHref}>项目页</a>
+            <a href={item.resourceHref}>{item.resourceLabel}</a>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function SimpleProgressList({ items, progress, bucket, onToggle }) {
+  return (
+    <div className="progress-list compact-progress-list">
+      {items.map((item) => (
+        <article className={progress[item.id] ? 'progress-row is-complete' : 'progress-row'} key={item.id}>
+          <ProgressCheckbox
+            checked={Boolean(progress[item.id])}
+            label={item.title}
+            onChange={(checked) => onToggle(bucket, item.id, checked)}
+          />
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function DashboardPage({ progress, onToggle, onReset }) {
+  const completedResources = countCompleted(resourcesProgressItems, progress.resourceCompletion)
+  const completedMiniGpt = countCompleted(miniGptProgressItems, progress.miniGptCompletion)
+  const completedWeeks = countCompleted(weeklyPlanItems, progress.weeklyCompletion)
+  const practicedQuestions = countCompleted(interviewQuestions, progress.questionPracticed)
+
+  return (
+    <main className="detail-page dashboard-page">
+      <a className="back-link" href="#top">
+        返回首页
+      </a>
+      <section className="detail-hero">
+        <p>V5A Dashboard</p>
+        <h1>学习进度 Dashboard</h1>
+        <span>把 OpenAI / AI Lab 面试准备拆成可追踪的学习任务、项目任务和面试训练任务。</span>
+        <div className="detail-actions">
+          <a className="button primary" href="#/interview-bank">
+            进入面试题库
+          </a>
+          <button className="button secondary" type="button" onClick={onReset}>
+            重置本地进度
+          </button>
+        </div>
+      </section>
+
+      <div className="project-detail-content">
+        <DetailSection id="dashboard-overview" title="总览">
+          <div className="dashboard-stat-grid">
+            <DashboardStat label="已完成资源页" value={`${completedResources} / ${resourcesProgressItems.length}`} />
+            <DashboardStat label="Mini GPT 项目任务" value={`${completedMiniGpt} / ${miniGptProgressItems.length}`} />
+            <DashboardStat label="面试题练习数" value={`${practicedQuestions} / ${interviewQuestions.length}`} />
+            <DashboardStat label="12 周计划完成" value={`${completedWeeks} / 12`} />
+          </div>
+        </DetailSection>
+
+        <DetailSection id="resource-progress" title="学习资源进度">
+          <ResourceProgressList items={resourcesProgressItems} progress={progress.resourceCompletion} onToggle={onToggle} />
+        </DetailSection>
+
+        <DetailSection id="mini-gpt-progress" title="Mini GPT 项目进度">
+          <MiniGptProgressList items={miniGptProgressItems} progress={progress.miniGptCompletion} onToggle={onToggle} />
+        </DetailSection>
+
+        <DetailSection id="weekly-progress" title="12 周计划进度">
+          <SimpleProgressList items={weeklyPlanItems} progress={progress.weeklyCompletion} bucket="weeklyCompletion" onToggle={onToggle} />
+        </DetailSection>
+
+        <DetailSection id="interview-progress" title="面试准备进度">
+          <SimpleProgressList items={interviewProgressItems} progress={progress.interviewCompletion} bucket="interviewCompletion" onToggle={onToggle} />
+        </DetailSection>
+      </div>
+    </main>
+  )
+}
+
+function QuestionCard({ question, practiced, mastered, onPracticedChange, onMasteredChange }) {
+  return (
+    <article className={mastered ? 'question-card is-mastered' : practiced ? 'question-card is-practiced' : 'question-card'}>
+      <div className="question-card-head">
+        <span>{question.category}</span>
+        <strong>{question.difficulty}</strong>
+      </div>
+      <h3>{question.question}</h3>
+      <dl>
+        <div>
+          <dt>考察点</dt>
+          <dd>{question.focus}</dd>
+        </div>
+        <div>
+          <dt>推荐回答思路</dt>
+          <dd>{question.answer}</dd>
+        </div>
+      </dl>
+      <a className="question-resource-link" href={question.resourceHref}>
+        {question.resourceLabel}
+      </a>
+      <div className="question-status-row">
+        <ProgressCheckbox checked={practiced} label="已练习" onChange={onPracticedChange} />
+        <ProgressCheckbox checked={mastered} label="已掌握" onChange={onMasteredChange} />
+      </div>
+    </article>
+  )
+}
+
+function InterviewBankPage({ progress, onToggle, onToggleMastered }) {
+  const [category, setCategory] = useState('全部')
+  const [search, setSearch] = useState('')
+  const practicedCount = countCompleted(interviewQuestions, progress.questionPracticed)
+  const masteredCount = countCompleted(interviewQuestions, progress.questionMastered)
+  const normalizedSearch = search.trim().toLowerCase()
+  const filteredQuestions = interviewQuestions.filter((item) => {
+    const categoryMatches = category === '全部' || item.category === category
+    const searchText = `${item.question} ${item.focus} ${item.category} ${item.answer}`.toLowerCase()
+    return categoryMatches && (!normalizedSearch || searchText.includes(normalizedSearch))
+  })
+
+  return (
+    <main className="detail-page interview-bank-page">
+      <a className="back-link" href="#top">
+        返回首页
+      </a>
+      <section className="detail-hero">
+        <p>V5A Interview Bank</p>
+        <h1>AI Lab 面试题库</h1>
+        <span>围绕 ML Coding、Technical Discussion、Research Discussion、Behavioral 和 Project Pitch 进行系统训练。</span>
+        <div className="detail-actions">
+          <a className="button primary" href="#/dashboard">
+            查看学习进度
+          </a>
+          <a className="button secondary" href="#/projects/mini-gpt">
+            Mini GPT 项目
+          </a>
+        </div>
+      </section>
+
+      <div className="project-detail-content">
+        <DetailSection id="question-stats" title="题库统计">
+          <div className="dashboard-stat-grid">
+            <DashboardStat label="总题数" value={interviewQuestions.length} />
+            <DashboardStat label="已练习题数" value={practicedCount} />
+            <DashboardStat label="已掌握题数" value={masteredCount} />
+            <DashboardStat label="未练习题数" value={interviewQuestions.length - practicedCount} />
+          </div>
+        </DetailSection>
+
+        <DetailSection id="question-bank" title="题目训练">
+          <div className="question-toolbar">
+            <input
+              aria-label="搜索题目"
+              className="question-search"
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="搜索题目、考察点、分类"
+            />
+            <div className="question-filter-row" aria-label="题库分类筛选">
+              {questionCategories.map((item) => (
+                <button className={item === category ? 'is-active' : ''} key={item} type="button" onClick={() => setCategory(item)}>
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="question-result-meta">当前显示 {filteredQuestions.length} 道题</div>
+          <div className="question-grid">
+            {filteredQuestions.map((item) => (
+              <QuestionCard
+                key={item.id}
+                question={item}
+                practiced={Boolean(progress.questionPracticed[item.id])}
+                mastered={Boolean(progress.questionMastered[item.id])}
+                onPracticedChange={(checked) => onToggle('questionPracticed', item.id, checked)}
+                onMasteredChange={(checked) => onToggleMastered(item.id, checked)}
+              />
+            ))}
+          </div>
+        </DetailSection>
+      </div>
+    </main>
+  )
+}
+
 function ProjectModuleRoadmap({ modules }) {
   return (
     <div className="module-roadmap">
@@ -363,6 +678,27 @@ function RelatedLearningPages({ resources }) {
         </a>
       ))}
     </div>
+  )
+}
+
+function CodeCapabilities({ items }) {
+  return (
+    <div className="code-capability-grid">
+      {items.map((item) => (
+        <div className="code-capability-card" key={item}>
+          <span aria-hidden="true"></span>
+          {item}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function RunCommands({ commands }) {
+  return (
+    <pre className="run-command-block" aria-label="代码项目运行命令">
+      <code>{commands.join('\n')}</code>
+    </pre>
   )
 }
 
@@ -483,8 +819,14 @@ function PracticeProject() {
           <a className="resource-link primary-link" href="#/projects/mini-gpt">
             开始项目
           </a>
+          <a className="resource-link secondary-link" href="https://github.com/conanxin/mini-gpt-from-scratch" target="_blank" rel="noreferrer">
+            代码仓库
+          </a>
           <a className="resource-link secondary-link" href="#/resources/transformer-from-scratch">
             查看对应学习页
+          </a>
+          <a className="resource-link secondary-link" href="#/dashboard">
+            进入训练系统
           </a>
         </div>
       </div>
@@ -558,6 +900,12 @@ function HomePage() {
             <a className="button secondary" href="#resources">
               查看资源地图
             </a>
+            <a className="button secondary" href="#/dashboard">
+              学习进度
+            </a>
+            <a className="button secondary" href="#/interview-bank">
+              面试题库
+            </a>
           </div>
         </div>
         <div className="hero-visual">
@@ -616,6 +964,12 @@ function ProjectDetail({ project }) {
           <p>{project.description}</p>
         </div>
         <div className="detail-actions">
+          <a className="button primary" href={project.repoUrl} target="_blank" rel="noreferrer">
+            查看代码仓库
+          </a>
+          <a className="button secondary" href={project.versionUrl} target="_blank" rel="noreferrer">
+            查看 v0.2 功能
+          </a>
           <button className="button primary" type="button" onClick={() => scrollToDetailSection('project-modules')}>
             查看模块路线图
           </button>
@@ -638,6 +992,14 @@ function ProjectDetail({ project }) {
           <RepoTree lines={project.repoTree} />
         </DetailSection>
 
+        <DetailSection id="project-code-capabilities" title="代码仓库当前能力">
+          <CodeCapabilities items={project.codeCapabilities} />
+        </DetailSection>
+
+        <DetailSection id="project-run" title="如何运行代码项目">
+          <RunCommands commands={project.runCommands} />
+        </DetailSection>
+
         <DetailSection id="project-resources" title="相关学习页">
           <RelatedLearningPages resources={project.relatedResources} />
         </DetailSection>
@@ -651,8 +1013,11 @@ function ProjectDetail({ project }) {
         </DetailSection>
 
         <section className="project-next-callout" aria-label="V4B 后续说明">
-          <p>V4B 下一步</p>
+          <p>V4B 状态</p>
           <h2>{project.nextStep}</h2>
+          <a href={project.repoUrl} target="_blank" rel="noreferrer">
+            打开 mini-gpt-from-scratch 仓库
+          </a>
         </section>
       </div>
     </main>
@@ -845,12 +1210,18 @@ function SiteFooter() {
 }
 
 function App() {
-  const { resourceSlug, projectSlug } = useHashRoute()
+  const { resourceSlug, projectSlug, page } = useHashRoute()
+  const {
+    progress,
+    resetProgress,
+    toggleProgress,
+    toggleQuestionMastered,
+  } = useLocalProgress()
   const selectedResource = resourceSlug ? resourcesBySlug[resourceSlug] : null
   const selectedProject = projectSlug ? projectsBySlug[projectSlug] : null
 
   useEffect(() => {
-    if (resourceSlug || projectSlug) {
+    if (resourceSlug || projectSlug || page) {
       window.scrollTo(0, 0)
       return
     }
@@ -859,12 +1230,16 @@ function App() {
     if (anchorId) {
       requestAnimationFrame(() => document.getElementById(anchorId)?.scrollIntoView())
     }
-  }, [resourceSlug, projectSlug])
+  }, [resourceSlug, projectSlug, page])
 
   return (
     <div id="top" className="app-shell">
       <Header />
-      {projectSlug ? (
+      {page === 'dashboard' ? (
+        <DashboardPage progress={progress} onToggle={toggleProgress} onReset={resetProgress} />
+      ) : page === 'interview-bank' ? (
+        <InterviewBankPage progress={progress} onToggle={toggleProgress} onToggleMastered={toggleQuestionMastered} />
+      ) : projectSlug ? (
         <ProjectDetail project={selectedProject} />
       ) : resourceSlug ? (
         <ResourceDetail resource={selectedResource} />

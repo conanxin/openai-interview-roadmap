@@ -85,10 +85,41 @@ V4A 新增站内项目页 `#/projects/mini-gpt`，把学习站内容联动到一
 - 相关学习页联动：CS336、Illustrated GPT-2、Self-Attention、Backpropagation、Transformer from Scratch、Scaling、Alisa Job Search Notes。
 - 项目完成 checklist 和“如何向面试官讲这个项目”的 30 秒 / 3 分钟展示模板。
 
+## V4C：接入 mini-gpt-from-scratch 真实代码仓库
+
+V4C 把 `#/projects/mini-gpt` 从路线图占位升级为“学习站 + 真实代码仓库联动”。
+
+页面新增：
+
+- GitHub 仓库入口：`https://github.com/conanxin/mini-gpt-from-scratch`
+- v0.2 tag 代码入口：`https://github.com/conanxin/mini-gpt-from-scratch/tree/v0.2.0`
+- 代码仓库当前能力：tokenizer、shifted batch、causal self-attention、Transformer block、MiniGPT model、training loop、top-p sampling、checkpoint、train/eval loss、loss history CSV、pytest 10 passed。
+- 如何运行代码项目：安装、测试、训练和生成命令。
+
+## V5A：学习进度 Dashboard 与 AI Lab 面试题库
+
+V5A 把站点从“内容学习站”继续升级为“OpenAI / AI Lab 面试训练系统”。
+
+新增页面：
+
+- `#/dashboard`：学习进度 Dashboard，用于追踪资源页、Mini GPT 项目模块、12 周计划和面试准备任务。
+- `#/interview-bank`：AI Lab 面试题库，覆盖 ML Coding、Technical Discussion、Research Discussion、Behavioral、Project Pitch、Math & Backprop、Scaling & Systems、RLHF / GRPO。
+
+V5A 支持：
+
+- 使用 `localStorage` 保存本地学习进度和题库练习状态。
+- 不需要后端、数据库、账号或云同步。
+- 首页 Hero 和 Mini GPT 项目区都提供训练系统入口。
+
+## Related Projects
+
+- `mini-gpt-from-scratch`：真实 Python + PyTorch Mini GPT 代码作品集，https://github.com/conanxin/mini-gpt-from-scratch
+- `openai-interview-roadmap`：当前学习站与 AI Lab 面试准备路线图，https://github.com/conanxin/openai-interview-roadmap
+
 后续计划：
 
-- V4B：创建 mini-gpt-from-scratch 独立代码仓库
-- V5：学习进度与面试题库
+- V5B：增加 Mock Interview 模式
+- V5C：增加错题复盘和导出 Markdown
 - V6：连续课程路径和学习 dashboard
 - V7：简历 / 项目展示 / mock interview 工具区
 

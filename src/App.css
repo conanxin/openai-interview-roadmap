@@ -988,6 +988,54 @@
   white-space: pre;
 }
 
+.code-capability-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.code-capability-card {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 52px;
+  padding: 12px 14px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.55;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.code-capability-card span {
+  width: 10px;
+  height: 10px;
+  background: var(--amber);
+  border-radius: 999px;
+  box-shadow: 0 0 0 5px rgba(241, 167, 46, 0.18);
+}
+
+.run-command-block {
+  margin: 18px 0 0;
+  padding: 18px;
+  max-width: 100%;
+  overflow-x: auto;
+  color: #eaf7f5;
+  font-size: 14px;
+  line-height: 1.85;
+  background: #17312f;
+  border-radius: 8px;
+}
+
+.run-command-block code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  white-space: pre;
+}
+
 .related-learning-grid,
 .pitch-card-list {
   display: grid;
@@ -1035,6 +1083,251 @@
   line-height: 1.4;
 }
 
+.project-next-callout a {
+  display: inline-flex;
+  margin-top: 16px;
+  color: var(--teal);
+  font-size: 15px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.project-next-callout a:hover {
+  text-decoration: underline;
+}
+
+.dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.dashboard-stat-card {
+  padding: 18px;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.dashboard-stat-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.dashboard-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink-strong);
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.progress-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.progress-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.progress-row.is-complete {
+  background: rgba(235, 248, 246, 0.72);
+  border-color: rgba(13, 126, 118, 0.22);
+}
+
+.progress-checkbox {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.progress-checkbox input {
+  width: 18px;
+  height: 18px;
+  margin-top: 4px;
+  accent-color: var(--teal);
+}
+
+.progress-checkbox.is-checked span {
+  color: var(--teal);
+}
+
+.progress-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.progress-meta span,
+.progress-meta a,
+.question-resource-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  background: var(--teal-soft);
+  border-radius: 8px;
+}
+
+.progress-meta a:hover,
+.question-resource-link:hover {
+  text-decoration: underline;
+}
+
+.question-toolbar {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.question-search {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  color: var(--ink);
+  font-size: 15px;
+  background: white;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+}
+
+.question-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.question-filter-row button {
+  min-height: 36px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.question-filter-row button.is-active {
+  color: white;
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.question-result-meta {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.question-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.question-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.question-card.is-practiced {
+  border-color: rgba(241, 167, 46, 0.34);
+}
+
+.question-card.is-mastered {
+  background: rgba(235, 248, 246, 0.78);
+  border-color: rgba(13, 126, 118, 0.28);
+}
+
+.question-card-head,
+.question-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.question-card-head span,
+.question-card-head strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 900;
+  border-radius: 8px;
+}
+
+.question-card-head span {
+  color: var(--teal);
+  background: var(--teal-soft);
+}
+
+.question-card-head strong {
+  color: #7a4b00;
+  background: rgba(241, 167, 46, 0.18);
+}
+
+.question-card h3 {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.question-card dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.question-card dt {
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.question-card dd {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.question-status-row {
+  justify-content: flex-start;
+}
+
 @media (max-width: 1180px) {
   .capability-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1043,7 +1336,8 @@
   .timeline,
   .resource-grid,
   .week-grid,
-  .related-learning-grid {
+  .related-learning-grid,
+  .dashboard-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1128,10 +1422,20 @@
   .checklist,
   .project-list,
   .module-roadmap,
+  .code-capability-grid,
   .related-learning-grid,
+  .dashboard-stat-grid,
   .prep-matrix,
   .job-plan-list {
     grid-template-columns: 1fr;
+  }
+
+  .progress-row {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-meta {
+    justify-content: flex-start;
   }
 
   .capability-card,
