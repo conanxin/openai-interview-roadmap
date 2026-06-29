@@ -124,6 +124,18 @@ V5B 新增 `#/mock-interview`，把题库进一步升级为结构化模拟面试
 - 结束后生成复盘页，展示题目列表、分类分布、未掌握题目、建议补习资源页和面试复盘模板。
 - 继续使用 `openai-roadmap-progress` 这一个 `localStorage` key，并新增最近一次 mock interview 结果记录。
 
+## V5C：错题复盘与 Markdown 导出
+
+V5C 新增 `#/review`，把未掌握问题、最近一次模拟面试和学习进度整理成可复制的 Markdown 复盘文档。
+
+新增能力：
+
+- 错题复盘页：汇总已练习但未掌握的题、最近一次 Mock Interview 的 weak questions，以及未练习的高阶题。
+- 学习进度导出：生成资源页、Mini GPT 项目、12 周计划和面试准备任务的 Markdown checklist。
+- 错题本导出：生成未掌握题列表，包含分类、难度、考察点、推荐回答思路和相关学习页。
+- 最近一次 Mock Interview 复盘导出：生成模式、时间、题目列表、分类分布、已掌握题、未掌握题和复盘模板。
+- 导出格式为 Markdown，页面内展示文本并支持复制到剪贴板。
+
 ## Related Projects
 
 - `mini-gpt-from-scratch`：真实 Python + PyTorch Mini GPT 代码作品集，https://github.com/conanxin/mini-gpt-from-scratch
@@ -131,9 +143,9 @@ V5B 新增 `#/mock-interview`，把题库进一步升级为结构化模拟面试
 
 后续计划：
 
-- V5C：增加错题复盘和导出 Markdown
 - V6：连续课程路径和学习 dashboard
 - V7：简历 / 项目展示 / mock interview 工具区
+- V8：公开学习日志与周报模板
 
 ## 项目目的
 

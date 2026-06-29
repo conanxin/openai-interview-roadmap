@@ -1557,6 +1557,123 @@
   font-weight: 900;
 }
 
+.review-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.review-summary-note {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.review-summary-note p {
+  margin: 0;
+  font-size: 15px;
+}
+
+.review-question-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.review-question-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  background: rgba(250, 252, 251, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.review-question-card h3 {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.review-question-card dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.review-question-card dt {
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.review-question-card dd {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.review-card-actions,
+.markdown-export-actions,
+.markdown-output-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.review-card-actions .button,
+.review-card-actions .question-resource-link {
+  margin-top: 0;
+}
+
+.markdown-export-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.markdown-output-head {
+  justify-content: space-between;
+}
+
+.markdown-output-head p {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.copy-status {
+  width: fit-content;
+  padding: 8px 12px;
+  color: var(--teal);
+  font-size: 14px;
+  font-weight: 900;
+  background: var(--teal-soft);
+  border-radius: 8px;
+}
+
+.markdown-output {
+  width: 100%;
+  min-height: 420px;
+  padding: 18px;
+  color: #eaf7f5;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.75;
+  white-space: pre;
+  resize: vertical;
+  background: #17312f;
+  border: 0;
+  border-radius: 8px;
+  overflow: auto;
+}
+
 @media (max-width: 1180px) {
   .capability-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1568,6 +1685,7 @@
   .mock-mode-grid,
   .mock-review-grid,
   .related-learning-grid,
+  .review-stat-grid,
   .dashboard-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1658,6 +1776,7 @@
     .dashboard-stat-grid,
     .mock-mode-grid,
     .mock-review-grid,
+    .review-stat-grid,
     .prep-matrix,
     .job-plan-list {
     grid-template-columns: 1fr;
@@ -1684,6 +1803,13 @@
   .mock-list-item > span {
     width: fit-content;
     padding: 0 10px;
+  }
+
+  .review-card-actions .button,
+  .review-card-actions .question-resource-link,
+  .markdown-export-actions .button,
+  .markdown-output-head .button {
+    width: 100%;
   }
 
   .capability-card,

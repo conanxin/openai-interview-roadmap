@@ -29,6 +29,7 @@ const emptyProgress = {
   questionPracticed: {},
   questionMastered: {},
   lastMockInterview: null,
+  lastExportedAt: null,
 }
 
 const navItems = [
@@ -71,7 +72,7 @@ function getDetailNavItems(resource) {
 function getRouteFromHash() {
   const resourceMatch = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
   const projectMatch = window.location.hash.match(/^#\/projects\/([^/?#]+)/)
-  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank|mock-interview)(?:[/?#]|$)/)
+  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank|mock-interview|review)(?:[/?#]|$)/)
 
   return {
     resourceSlug: resourceMatch ? decodeURIComponent(resourceMatch[1]) : null,
@@ -154,7 +155,14 @@ function useLocalProgress() {
     }))
   }
 
-  return { progress, resetProgress, saveMockInterview, toggleProgress, toggleQuestionMastered }
+  const recordExport = () => {
+    setProgress((current) => ({
+      ...current,
+      lastExportedAt: new Date().toISOString(),
+    }))
+  }
+
+  return { progress, recordExport, resetProgress, saveMockInterview, toggleProgress, toggleQuestionMastered }
 }
 
 function Header() {
@@ -449,6 +457,153 @@ function getSuggestedResources(questions) {
   return [...resourcesMap.entries()].map(([href, label]) => ({ href, label }))
 }
 
+function formatDateTime(value) {
+  if (!value) {
+    return '暂无记录'
+  }
+
+  return new Date(value).toLocaleString('zh-CN')
+}
+
+function getMockModeName(modeId) {
+  return mockInterviewModes.find((mode) => mode.id === modeId)?.name || '暂无记录'
+}
+
+function getQuestionsByIds(ids = []) {
+  const questionMap = new Map(interviewQuestions.map((question) => [question.id, question]))
+  return ids.map((id) => questionMap.get(id)).filter(Boolean)
+}
+
+function getReviewQuestions(progress) {
+  const recentWeakIds = new Set(progress.lastMockInterview?.weakIds || [])
+  const reviewMap = new Map()
+
+  interviewQuestions.forEach((question) => {
+    const practiced = Boolean(progress.questionPracticed[question.id])
+    const mastered = Boolean(progress.questionMastered[question.id])
+    const isPracticedWeak = practiced && !mastered
+    const isRecentWeak = recentWeakIds.has(question.id)
+    const isUnpracticedAdvanced = !practiced && question.difficulty === '高阶'
+
+    if (isPracticedWeak || isRecentWeak || isUnpracticedAdvanced) {
+      reviewMap.set(question.id, {
+        ...question,
+        reviewReason: [
+          isPracticedWeak ? '已练习但未掌握' : null,
+          isRecentWeak ? '最近一次 Mock Interview 未掌握' : null,
+          isUnpracticedAdvanced ? '未练习的高阶题' : null,
+        ].filter(Boolean),
+      })
+    }
+  })
+
+  return [...reviewMap.values()]
+}
+
+function markdownCheckbox(label, completed) {
+  return `- [${completed ? 'x' : ' '}] ${label}`
+}
+
+function buildLearningProgressMarkdown(progress) {
+  const generatedAt = formatDateTime(new Date().toISOString())
+  const resourceLines = resourcesProgressItems.map((item) => markdownCheckbox(item.title, progress.resourceCompletion[item.id]))
+  const miniGptLines = miniGptProgressItems.map((item) => markdownCheckbox(item.title, progress.miniGptCompletion[item.id]))
+  const weekLines = weeklyPlanItems.map((item) => markdownCheckbox(item.title, progress.weeklyCompletion[item.id]))
+  const interviewLines = interviewProgressItems.map((item) => markdownCheckbox(item.title, progress.interviewCompletion[item.id]))
+
+  return [
+    '# OpenAI / AI Lab 学习进度复盘',
+    '',
+    `生成时间：${generatedAt}`,
+    '',
+    '## 资源页进度',
+    ...resourceLines,
+    '',
+    '## Mini GPT 项目进度',
+    ...miniGptLines,
+    '',
+    '## 12 周计划进度',
+    ...weekLines,
+    '',
+    '## 面试准备进度',
+    ...interviewLines,
+  ].join('\n')
+}
+
+function buildWrongBookMarkdown(questions) {
+  const questionBlocks = questions.length > 0
+    ? questions.map((question, index) => [
+        `### ${index + 1}. ${question.question}`,
+        '',
+        `- 分类：${question.category}`,
+        `- 难度：${question.difficulty}`,
+        `- 复盘来源：${question.reviewReason.join(' / ')}`,
+        `- 考察点：${question.focus}`,
+        `- 推荐回答思路：${question.answer}`,
+        `- 相关学习页：[${question.resourceLabel}](${question.resourceHref})`,
+      ].join('\n'))
+    : ['暂无错题。可以先去题库或 Mock Interview 完成一轮练习。']
+
+  return [
+    '# AI Lab 面试错题本',
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    '',
+    '## 未掌握题列表',
+    ...questionBlocks,
+    '',
+    '## 下一步学习建议',
+    '- 先回看相关学习页，把概念补到能用 2 分钟讲清楚。',
+    '- 针对每道题写出一个结构化回答：背景 -> 核心机制 -> 例子 -> trade-off -> 验证方式。',
+    '- 下一次 Mock Interview 优先选择包含这些分类的模式。',
+  ].join('\n')
+}
+
+function buildMockInterviewMarkdown(progress) {
+  const lastMock = progress.lastMockInterview
+  if (!lastMock) {
+    return [
+      '# 最近一次 Mock Interview 复盘',
+      '',
+      `生成时间：${formatDateTime(new Date().toISOString())}`,
+      '',
+      '暂无最近一次 Mock Interview 记录。请先完成一场模拟面试。',
+    ].join('\n')
+  }
+
+  const questions = getQuestionsByIds(lastMock.questionIds)
+  const masteredQuestions = getQuestionsByIds(lastMock.masteredIds)
+  const weakQuestions = getQuestionsByIds(lastMock.weakIds)
+  const distribution = getCategoryDistribution(questions)
+
+  return [
+    '# 最近一次 Mock Interview 复盘',
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    `模式：${getMockModeName(lastMock.mode)}`,
+    `完成时间：${formatDateTime(lastMock.completedAt)}`,
+    '',
+    '## 题目列表',
+    ...questions.map((question, index) => `- ${index + 1}. [${question.category} / ${question.difficulty}] ${question.question}`),
+    '',
+    '## 分类分布',
+    ...Object.entries(distribution).map(([category, count]) => `- ${category}：${count}`),
+    '',
+    '## 已掌握题',
+    ...(masteredQuestions.length > 0 ? masteredQuestions.map((question) => `- ${question.question}`) : ['- 暂无']),
+    '',
+    '## 未掌握题',
+    ...(weakQuestions.length > 0 ? weakQuestions.map((question) => `- ${question.question}`) : ['- 暂无']),
+    '',
+    '## 复盘模板',
+    '- 本次最卡的问题：',
+    '- 哪个概念不熟：',
+    '- 哪个回答可以更结构化：',
+    '- 需要补的资源页：',
+    '- 下一次练习目标：',
+  ].join('\n')
+}
+
 function ProgressCheckbox({ checked, label, onChange }) {
   return (
     <label className={checked ? 'progress-checkbox is-checked' : 'progress-checkbox'}>
@@ -544,6 +699,9 @@ function DashboardPage({ progress, onToggle, onReset }) {
           </a>
           <a className="button primary" href="#/mock-interview">
             开始一次 Mock Interview
+          </a>
+          <a className="button secondary" href="#/review">
+            查看错题复盘
           </a>
           <button className="button secondary" type="button" onClick={onReset}>
             重置本地进度
@@ -864,6 +1022,12 @@ function MockReviewPage({ mode, questions, progress, result, onRestart }) {
       <DetailSection id="mock-review-template" title="面试复盘模板">
         <InterviewReviewTemplate fields={mockReviewPrompts} />
         <div className="detail-actions">
+          <a className="button primary" href="#/review?export=mock">
+            导出本次复盘
+          </a>
+          <a className="button secondary" href="#/review">
+            查看完整错题本
+          </a>
           <button className="button primary" type="button" onClick={onRestart}>
             再来一场
           </button>
@@ -958,6 +1122,193 @@ function MockInterviewPage({ progress, onSaveMockInterview, onToggle, onToggleMa
           toggleAnswer={() => setShowAnswer((visible) => !visible)}
         />
       )}
+    </main>
+  )
+}
+
+function getInitialExportType() {
+  if (typeof window !== 'undefined' && window.location.hash.includes('export=mock')) {
+    return 'mock'
+  }
+
+  return 'progress'
+}
+
+function ReviewQuestionCard({ question, onMaster }) {
+  return (
+    <article className="review-question-card">
+      <div className="question-card-head">
+        <span>{question.category}</span>
+        <strong>{question.difficulty}</strong>
+      </div>
+      <h3>{question.question}</h3>
+      <dl>
+        <div>
+          <dt>复盘来源</dt>
+          <dd>{question.reviewReason.join(' / ')}</dd>
+        </div>
+        <div>
+          <dt>考察点</dt>
+          <dd>{question.focus}</dd>
+        </div>
+        <div>
+          <dt>推荐回答思路</dt>
+          <dd>{question.answer}</dd>
+        </div>
+      </dl>
+      <div className="review-card-actions">
+        <a className="question-resource-link" href={question.resourceHref}>
+          {question.resourceLabel}
+        </a>
+        <button className="button primary" type="button" onClick={() => onMaster(question.id, true)}>
+          标记已掌握
+        </button>
+        <a className="button secondary" href="#/interview-bank">
+          返回题库查看
+        </a>
+      </div>
+    </article>
+  )
+}
+
+function ReviewSummary({ progress, reviewQuestions }) {
+  const completedResources = countCompleted(resourcesProgressItems, progress.resourceCompletion)
+  const completedMiniGpt = countCompleted(miniGptProgressItems, progress.miniGptCompletion)
+  const completedWeeks = countCompleted(weeklyPlanItems, progress.weeklyCompletion)
+  const practicedQuestions = countCompleted(interviewQuestions, progress.questionPracticed)
+  const masteredQuestions = countCompleted(interviewQuestions, progress.questionMastered)
+  const lastMock = progress.lastMockInterview
+
+  return (
+    <div className="dashboard-stat-grid review-stat-grid">
+      <DashboardStat label="资源页完成" value={`${completedResources} / ${resourcesProgressItems.length}`} />
+      <DashboardStat label="Mini GPT 模块" value={`${completedMiniGpt} / ${miniGptProgressItems.length}`} />
+      <DashboardStat label="12 周计划" value={`${completedWeeks} / 12`} />
+      <DashboardStat label="已练习题" value={`${practicedQuestions} / ${interviewQuestions.length}`} />
+      <DashboardStat label="已掌握题" value={`${masteredQuestions} / ${interviewQuestions.length}`} />
+      <DashboardStat label="错题本题数" value={reviewQuestions.length} />
+      <DashboardStat label="最近 Mock 模式" value={lastMock ? getMockModeName(lastMock.mode) : '暂无'} />
+      <DashboardStat label="最近 weak 数" value={lastMock ? lastMock.weakIds.length : 0} />
+    </div>
+  )
+}
+
+function MarkdownExportPanel({ markdown, onCopy, onSelect, selectedType, status }) {
+  const exportOptions = [
+    { id: 'progress', label: '导出学习进度 Markdown' },
+    { id: 'wrong', label: '导出错题本 Markdown' },
+    { id: 'mock', label: '导出最近一次 Mock Interview 复盘 Markdown' },
+  ]
+
+  return (
+    <div className="markdown-export-panel">
+      <div className="markdown-export-actions">
+        {exportOptions.map((option) => (
+          <button
+            className={selectedType === option.id ? 'button primary' : 'button secondary'}
+            key={option.id}
+            type="button"
+            onClick={() => onSelect(option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <div className="markdown-output-head">
+        <p>Markdown 输出</p>
+        <button className="button primary" type="button" onClick={onCopy}>
+          复制 Markdown
+        </button>
+      </div>
+      {status ? <div className="copy-status">{status}</div> : null}
+      <textarea className="markdown-output" readOnly value={markdown} aria-label="Markdown 导出内容" />
+    </div>
+  )
+}
+
+function ReviewPage({ progress, onRecordExport, onToggleMastered }) {
+  const [exportType, setExportType] = useState(getInitialExportType)
+  const [copyStatus, setCopyStatus] = useState('')
+  const reviewQuestions = getReviewQuestions(progress)
+  const lastMock = progress.lastMockInterview
+  const markdownByType = {
+    progress: buildLearningProgressMarkdown(progress),
+    wrong: buildWrongBookMarkdown(reviewQuestions),
+    mock: buildMockInterviewMarkdown(progress),
+  }
+  const selectedMarkdown = markdownByType[exportType]
+
+  const selectExportType = (type) => {
+    setExportType(type)
+    setCopyStatus('已生成，可复制或手动选中文本')
+    onRecordExport()
+  }
+
+  const copyMarkdown = async () => {
+    onRecordExport()
+    if (!navigator.clipboard?.writeText) {
+      setCopyStatus('已生成，可手动复制')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(selectedMarkdown)
+      setCopyStatus('已复制')
+    } catch {
+      setCopyStatus('复制失败，可手动复制')
+    }
+  }
+
+  return (
+    <main className="detail-page review-page">
+      <a className="back-link" href="#top">
+        返回首页
+      </a>
+      <section className="detail-hero">
+        <p>V5C Review</p>
+        <h1>错题复盘与导出</h1>
+        <span>把未掌握问题、最近一次模拟面试和学习进度整理成可复制的 Markdown 复盘文档。</span>
+        <div className="detail-actions">
+          <a className="button secondary" href="#/interview-bank">
+            返回题库
+          </a>
+          <a className="button secondary" href="#/mock-interview">
+            开始模拟面试
+          </a>
+        </div>
+      </section>
+
+      <div className="project-detail-content">
+        <DetailSection id="review-summary" title="复盘摘要">
+          <ReviewSummary progress={progress} reviewQuestions={reviewQuestions} />
+          <div className="review-summary-note">
+            <p>最近一次 Mock Interview 时间：{formatDateTime(lastMock?.completedAt)}</p>
+            <p>最近一次导出时间：{formatDateTime(progress.lastExportedAt)}</p>
+          </div>
+        </DetailSection>
+
+        <DetailSection id="wrong-book" title="错题本">
+          {reviewQuestions.length > 0 ? (
+            <div className="review-question-grid">
+              {reviewQuestions.map((question) => (
+                <ReviewQuestionCard key={question.id} question={question} onMaster={onToggleMastered} />
+              ))}
+            </div>
+          ) : (
+            <p>当前没有错题记录。可以先去题库练习几道题，或者完成一次 Mock Interview。</p>
+          )}
+        </DetailSection>
+
+        <DetailSection id="markdown-export" title="Markdown 导出">
+          <MarkdownExportPanel
+            markdown={selectedMarkdown}
+            selectedType={exportType}
+            status={copyStatus}
+            onCopy={copyMarkdown}
+            onSelect={selectExportType}
+          />
+        </DetailSection>
+      </div>
     </main>
   )
 }
@@ -1242,6 +1593,9 @@ function HomePage() {
             </a>
             <a className="button secondary" href="#/mock-interview">
               开始模拟面试
+            </a>
+            <a className="button secondary" href="#/review">
+              错题复盘
             </a>
           </div>
         </div>
@@ -1550,6 +1904,7 @@ function App() {
   const { resourceSlug, projectSlug, page } = useHashRoute()
   const {
     progress,
+    recordExport,
     resetProgress,
     saveMockInterview,
     toggleProgress,
@@ -1582,6 +1937,12 @@ function App() {
           progress={progress}
           onSaveMockInterview={saveMockInterview}
           onToggle={toggleProgress}
+          onToggleMastered={toggleQuestionMastered}
+        />
+      ) : page === 'review' ? (
+        <ReviewPage
+          progress={progress}
+          onRecordExport={recordExport}
           onToggleMastered={toggleQuestionMastered}
         />
       ) : projectSlug ? (
