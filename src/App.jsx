@@ -566,6 +566,63 @@ function getReviewQuestions(progress) {
   return [...reviewMap.values()]
 }
 
+function getReviewQuestionGroups(progress) {
+  const recentWeakIds = new Set(progress.lastMockInterview?.weakIds || [])
+  const practicedWeak = interviewQuestions.filter((question) => progress.questionPracticed[question.id] && !progress.questionMastered[question.id])
+  const recentMockWeak = getQuestionsByIds([...recentWeakIds])
+  const unpracticedAdvanced = interviewQuestions.filter((question) => !progress.questionPracticed[question.id] && question.difficulty === '高阶')
+
+  return { practicedWeak, recentMockWeak, unpracticedAdvanced }
+}
+
+function getQuestionCategoryStats(progress) {
+  return questionCategories
+    .filter((category) => category !== '全部')
+    .map((category) => {
+      const categoryQuestions = interviewQuestions.filter((question) => question.category === category)
+      const practiced = categoryQuestions.filter((question) => progress.questionPracticed[question.id]).length
+      const mastered = categoryQuestions.filter((question) => progress.questionMastered[question.id]).length
+
+      return {
+        category,
+        total: categoryQuestions.length,
+        practiced,
+        mastered,
+        unmastered: categoryQuestions.length - mastered,
+      }
+    })
+}
+
+function getNextActionPlan(progress, reviewQuestions) {
+  const completedCourseTasks = getCompletedCourseTaskCount(progress)
+  const completedMiniGpt = countCompleted(miniGptProgressItems, progress.miniGptCompletion)
+  const masteredQuestions = countCompleted(interviewQuestions, progress.questionMastered)
+  const suggestions = []
+
+  if (completedCourseTasks / courseTaskCount < 0.5) {
+    const currentWeek = progress.activeCourseWeek || getSuggestedCourseWeek(progress)?.weekNumber || 1
+    suggestions.push(`课程完成率低于 50%，建议回到第 ${currentWeek} 周继续推进。`)
+  }
+
+  if (masteredQuestions / interviewQuestions.length < 0.5) {
+    suggestions.push('题库掌握率低于 50%，建议进入 Interview Bank 做分类练习。')
+  }
+
+  if (!progress.lastMockInterview) {
+    suggestions.push('尚未完成 Mock Interview，建议先完成一次快速练习。')
+  }
+
+  if (completedMiniGpt < miniGptProgressItems.length) {
+    suggestions.push('Mini GPT 模块尚未全部完成，建议回到 Mini GPT 项目页补齐项目链路。')
+  }
+
+  if (reviewQuestions.length >= 5) {
+    suggestions.push('错题较多，建议进入 Review 页集中复盘并导出错题本。')
+  }
+
+  return suggestions.length > 0 ? suggestions : ['整体进度良好，建议继续导出周报并准备简历 / 项目展示材料。']
+}
+
 function markdownCheckbox(label, completed) {
   return `- [${completed ? 'x' : ' '}] ${label}`
 }
@@ -708,6 +765,101 @@ function buildWeekReportMarkdown(week, progress) {
   ].join('\n')
 }
 
+function formatMarkdownQuestionList(questions) {
+  return questions.length > 0
+    ? questions.map((question) => `- [${question.category} / ${question.difficulty}] ${question.question}`)
+    : ['- 暂无']
+}
+
+function buildCourseTotalReportMarkdown(progress) {
+  const completedCourseWeeks = getCompletedCourseWeekCount(progress)
+  const completedCourseTasks = getCompletedCourseTaskCount(progress)
+  const completedResources = countCompleted(resourcesProgressItems, progress.resourceCompletion)
+  const completedMiniGpt = countCompleted(miniGptProgressItems, progress.miniGptCompletion)
+  const practicedQuestions = countCompleted(interviewQuestions, progress.questionPracticed)
+  const masteredQuestions = countCompleted(interviewQuestions, progress.questionMastered)
+  const reviewQuestions = getReviewQuestions(progress)
+  const { practicedWeak, recentMockWeak, unpracticedAdvanced } = getReviewQuestionGroups(progress)
+  const lastMock = progress.lastMockInterview
+  const nextActions = getNextActionPlan(progress, reviewQuestions)
+  const suggestedWeek = getSuggestedCourseWeek(progress)
+  const currentWeek = progress.activeCourseWeek
+    ? `第 ${progress.activeCourseWeek} 周`
+    : suggestedWeek
+      ? `建议第 ${suggestedWeek.weekNumber} 周`
+      : '已完成全部 12 周'
+
+  const weeklyBlocks = courseWeeks.map((week) => {
+    const completedTasks = week.tasks.filter((task) => progress.courseTasks[task.id])
+    const incompleteTasks = week.tasks.filter((task) => !progress.courseTasks[task.id])
+
+    return [
+      `### ${week.title}`,
+      `- 完成任务数：${completedTasks.length} / ${week.tasks.length}`,
+      '- 已完成任务：',
+      ...(completedTasks.length > 0 ? completedTasks.map((task) => `  - ${task.label}`) : ['  - 暂无']),
+      '- 未完成任务：',
+      ...(incompleteTasks.length > 0 ? incompleteTasks.map((task) => `  - ${task.label}`) : ['  - 暂无']),
+    ].join('\n')
+  })
+
+  const mockLines = lastMock
+    ? [
+        `- 模式：${getMockModeName(lastMock.mode)}`,
+        `- 时间：${formatDateTime(lastMock.completedAt)}`,
+        `- 题目数量：${lastMock.questionIds.length}`,
+        `- 已掌握数量：${lastMock.masteredIds.length}`,
+        `- weakIds 数量：${lastMock.weakIds.length}`,
+      ]
+    : ['- 尚未完成模拟面试。']
+
+  return [
+    '# 12 周 OpenAI / AI Lab 面试课程总报告',
+    '',
+    '## 生成时间',
+    formatDateTime(new Date().toISOString()),
+    '',
+    '## 总体进度',
+    `- 已完成周数：${completedCourseWeeks} / 12`,
+    `- 已完成课程任务数：${completedCourseTasks} / ${courseTaskCount}`,
+    `- 当前学习周：${currentWeek}`,
+    `- 资源页完成数：${completedResources} / ${resourcesProgressItems.length}`,
+    `- Mini GPT 模块完成数：${completedMiniGpt} / ${miniGptProgressItems.length}`,
+    `- 面试题已练习数：${practicedQuestions} / ${interviewQuestions.length}`,
+    `- 面试题已掌握数：${masteredQuestions} / ${interviewQuestions.length}`,
+    '',
+    '## 每周完成情况',
+    ...weeklyBlocks,
+    '',
+    '## 学习资源完成情况',
+    ...resourcesProgressItems.map((item) => markdownCheckbox(item.title, progress.resourceCompletion[item.id])),
+    '',
+    '## Mini GPT 项目完成情况',
+    ...miniGptProgressItems.map((item) => markdownCheckbox(item.title, progress.miniGptCompletion[item.id])),
+    '',
+    '## 面试题训练情况',
+    ...getQuestionCategoryStats(progress).map(
+      (item) => `- ${item.category}：总题数 ${item.total}，已练习 ${item.practiced}，已掌握 ${item.mastered}，未掌握 ${item.unmastered}`,
+    ),
+    '',
+    '## 最近一次 Mock Interview',
+    ...mockLines,
+    '',
+    '## 错题与薄弱点',
+    '### 已练习但未掌握题',
+    ...formatMarkdownQuestionList(practicedWeak),
+    '',
+    '### 最近一次 Mock weak questions',
+    ...formatMarkdownQuestionList(recentMockWeak),
+    '',
+    '### 未练习高阶题',
+    ...formatMarkdownQuestionList(unpracticedAdvanced),
+    '',
+    '## 下一步行动计划',
+    ...nextActions.map((action) => `- ${action}`),
+  ].join('\n')
+}
+
 function ProgressCheckbox({ checked, label, onChange }) {
   return (
     <label className={checked ? 'progress-checkbox is-checked' : 'progress-checkbox'}>
@@ -812,6 +964,9 @@ function DashboardPage({ progress, onToggle, onReset }) {
           </a>
           <a className="button secondary" href={currentCourseHref}>
             查看当前周详情
+          </a>
+          <a className="button secondary" href="#/review?export=course">
+            导出课程总报告
           </a>
           <a className="button secondary" href="#/review">
             查看错题复盘
@@ -1242,6 +1397,10 @@ function MockInterviewPage({ progress, onSaveMockInterview, onToggle, onToggleMa
 }
 
 function getInitialExportType() {
+  if (typeof window !== 'undefined' && window.location.hash.includes('export=course')) {
+    return 'course'
+  }
+
   if (typeof window !== 'undefined' && window.location.hash.includes('export=mock')) {
     return 'mock'
   }
@@ -1313,6 +1472,7 @@ function MarkdownExportPanel({ markdown, onCopy, onSelect, selectedType, status 
     { id: 'progress', label: '导出学习进度 Markdown' },
     { id: 'wrong', label: '导出错题本 Markdown' },
     { id: 'mock', label: '导出最近一次 Mock Interview 复盘 Markdown' },
+    { id: 'course', label: '12 周课程总报告 Markdown' },
   ]
 
   return (
@@ -1350,6 +1510,7 @@ function ReviewPage({ progress, onRecordExport, onToggleMastered }) {
     progress: buildLearningProgressMarkdown(progress),
     wrong: buildWrongBookMarkdown(reviewQuestions),
     mock: buildMockInterviewMarkdown(progress),
+    course: buildCourseTotalReportMarkdown(progress),
   }
   const selectedMarkdown = markdownByType[exportType]
 
@@ -1456,6 +1617,9 @@ function CourseOverview({ progress }) {
         </a>
         <a className="button secondary" href="#/review">
           进入错题复盘
+        </a>
+        <a className="button secondary" href="#/review?export=course">
+          生成课程总报告
         </a>
       </div>
     </DetailSection>
@@ -1591,6 +1755,9 @@ function CoursePage({ progress, onSetActiveWeek, onToggleTask }) {
           </a>
           <a className="button secondary" href="#/review">
             错题复盘
+          </a>
+          <a className="button secondary" href="#/review?export=course">
+            生成课程总报告
           </a>
         </div>
       </section>

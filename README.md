@@ -160,6 +160,17 @@ V6B 为 12 周课程新增每周详情页，例如 `#/course/week/1` 到 `#/cour
 - 周报 Markdown：支持生成和复制本周学习周报，包含目标、已完成任务、未完成任务、资源、项目任务、面试训练、产出和复盘模板。
 - Course 首页每周卡片新增“查看本周详情”，Dashboard 新增“查看当前周详情”。
 
+## V6C：12 周课程总报告导出
+
+V6C 新增 12 周课程总报告 Markdown，把课程学习、项目实践和面试训练汇总成一份可复制的复盘文档。
+
+新增能力：
+
+- 支持 12 周课程总报告 Markdown。
+- 汇总课程进度、学习资源完成情况、Mini GPT 项目完成情况、题库训练、最近一次 Mock Interview 和错题薄弱点。
+- 自动生成下一步行动建议，帮助判断应该回到当前周、进入 Interview Bank、补 Mini GPT 模块或完成 Mock Interview。
+- 可复制到 GitHub、Notion、周报或个人学习日志。
+
 ## Related Projects
 
 - `mini-gpt-from-scratch`：真实 Python + PyTorch Mini GPT 代码作品集，https://github.com/conanxin/mini-gpt-from-scratch
@@ -167,7 +178,6 @@ V6B 为 12 周课程新增每周详情页，例如 `#/course/week/1` 到 `#/cour
 
 后续计划：
 
-- V6C：课程任务导出总报告
 - V7：简历 / 项目展示 / mock interview 工具区
 - V8：公开学习日志与周报模板
 
