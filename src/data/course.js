@@ -1,4 +1,25 @@
-const resource = (label, href) => ({ label, href })
+const resourceDescriptions = {
+  'Alisa Job Search Notes': '求职战略、面试类型和项目表达的总入口。',
+  'Stanford CS336': '语言模型从数据、tokenizer、训练到 scaling 的主线课程。',
+  'Illustrated GPT-2': '用可视化方式理解 decoder-only GPT 结构和生成流程。',
+  'Transformer from Scratch': '把 Transformer 和 Mini GPT 实现拆成可编码模块。',
+  'Self-Attention': '集中理解 Q/K/V、attention score、mask 和 multi-head attention。',
+  Backpropagation: '补齐计算图、链式法则、gradient flow 和手写 backward。',
+  LeetCode: '训练 general coding 的题型识别、沟通和边界条件处理。',
+  Scaling: '理解模型规模、数据规模、compute、KV cache 和并行策略。',
+  'Policy Gradient': '理解语言模型如何映射到 policy、reward 和 advantage。',
+  GRPO: '理解 PPO vs GRPO、组内相对优势和后训练约束。',
+  'Interview Bank': '进入 AI Lab 面试题库，按分类训练回答结构。',
+  'Mock Interview': '用结构化模拟面试把知识转化为口头表达。',
+  Review: '整理错题、导出 Markdown 复盘并安排下一轮补强。',
+  'Mini GPT Project': '把课程知识转化为可展示的 Mini GPT 代码项目。',
+}
+
+const resource = (label, href) => ({
+  label,
+  href,
+  description: resourceDescriptions[label] || '本周推荐学习入口。',
+})
 const task = (id, label, type) => ({ id, label, type })
 
 export const courseWeeks = [
@@ -21,6 +42,7 @@ export const courseWeeks = [
       task('course-w01-resource-alisa', '阅读求职战略页', 'resource'),
       task('course-w01-resource-cs336', '看 CS336 主线导读', 'resource'),
       task('course-w01-project-chain-note', '建立 LLM 全链路笔记', 'project'),
+      task('course-w01-interview-self-review', '完成一次 AI Lab 面试能力自评', 'interview'),
       task('course-w01-output-map', '完成 LLM 全链路图', 'deliverable'),
       task('course-w01-output-self-review', '完成面试能力自评表', 'deliverable'),
     ],
@@ -46,6 +68,7 @@ export const courseWeeks = [
       task('course-w02-resource-gpt2', '阅读 Illustrated GPT-2 中 token 输入部分', 'resource'),
       task('course-w02-project-module-1', '阅读 Mini GPT Module 1', 'project'),
       task('course-w02-project-batch', '写出 tokenizer 和 batch 构造思路', 'project'),
+      task('course-w02-interview-tokenizer-answer', '准备 tokenizer 为什么重要的 90 秒回答', 'interview'),
       task('course-w02-output-tokenizer-notes', '完成 tokenizer_notes.md', 'deliverable'),
       task('course-w02-output-dataset-loader', '完成 dataset_loader 思路说明', 'deliverable'),
     ],
@@ -71,6 +94,7 @@ export const courseWeeks = [
       task('course-w03-resource-transformer', '复习 Transformer from Scratch 架构页', 'resource'),
       task('course-w03-project-module-2', '阅读 Mini GPT Module 2', 'project'),
       task('course-w03-project-data-flow', '画出 Mini GPT 数据流', 'project'),
+      task('course-w03-interview-decoder-compare', '准备 decoder-only 与 encoder-decoder 对比回答', 'interview'),
       task('course-w03-output-decoder-diagram', '完成 decoder-only Transformer 结构图', 'deliverable'),
       task('course-w03-output-shape-notes', '完成 shape_notes.md', 'deliverable'),
     ],
@@ -120,6 +144,7 @@ export const courseWeeks = [
       task('course-w05-resource-transformer', '阅读 Transformer from Scratch block 章节', 'resource'),
       task('course-w05-project-module-4', '阅读 Mini GPT Module 4', 'project'),
       task('course-w05-project-block-flow', '解释 block forward 数据流', 'project'),
+      task('course-w05-interview-block-discussion', '准备 LayerNorm / residual / block 技术讨论回答', 'interview'),
       task('course-w05-output-block-notes', '完成 block.py 思路说明', 'deliverable'),
       task('course-w05-output-model-sketch', '完成 model.py 结构草图', 'deliverable'),
     ],
@@ -268,6 +293,7 @@ export const courseWeeks = [
     reviewPrompt: '我是否已经把薄弱题沉淀到错题本，并安排下一轮补强？',
     tasks: [
       task('course-w11-resource-bank', '进入题库完成一轮分类练习', 'resource'),
+      task('course-w11-project-pitch-link', '把 Mini GPT 项目讲法和题库问题连接起来', 'project'),
       task('course-w11-mock-technical', '完成一次技术面试模式', 'interview'),
       task('course-w11-mock-project', '完成一次项目面试模式', 'interview'),
       task('course-w11-interview-mark-status', '标记已掌握 / 未掌握问题', 'interview'),

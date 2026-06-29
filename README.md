@@ -148,6 +148,18 @@ V6A 新增 `#/course`，把资源学习、Mini GPT 项目、面试题库、Mock 
 - 课程总览：展示当前建议学习周、已完成周数、课程任务完成数，并联动 Dashboard、Interview Bank、Mock Interview 和 Review。
 - 首页、Dashboard、Review 都新增课程路径入口。
 
+## V6B：每周课程详情页与周报 Markdown 模板
+
+V6B 为 12 周课程新增每周详情页，例如 `#/course/week/1` 到 `#/course/week/12`。
+
+新增能力：
+
+- 每周详情页：展示本周 Hero、学习路线、推荐学习页、项目任务、面试训练任务、本周产出、推荐题目和复盘提示。
+- 每周任务 checklist：继续复用 `openai-roadmap-progress.courseTasks` 保存完成状态。
+- 当前学习周：每周详情页可直接设为当前学习周，并与 Dashboard 联动。
+- 周报 Markdown：支持生成和复制本周学习周报，包含目标、已完成任务、未完成任务、资源、项目任务、面试训练、产出和复盘模板。
+- Course 首页每周卡片新增“查看本周详情”，Dashboard 新增“查看当前周详情”。
+
 ## Related Projects
 
 - `mini-gpt-from-scratch`：真实 Python + PyTorch Mini GPT 代码作品集，https://github.com/conanxin/mini-gpt-from-scratch
@@ -155,8 +167,7 @@ V6A 新增 `#/course`，把资源学习、Mini GPT 项目、面试题库、Mock 
 
 后续计划：
 
-- V6B：每周课程详情页和周报模板
-- V6C：课程任务导出 Markdown
+- V6C：课程任务导出总报告
 - V7：简历 / 项目展示 / mock interview 工具区
 - V8：公开学习日志与周报模板
 

@@ -75,12 +75,14 @@ function getDetailNavItems(resource) {
 function getRouteFromHash() {
   const resourceMatch = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
   const projectMatch = window.location.hash.match(/^#\/projects\/([^/?#]+)/)
+  const courseWeekMatch = window.location.hash.match(/^#\/course\/week\/(\d{1,2})(?:[/?#]|$)/)
   const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank|mock-interview|review|course)(?:[/?#]|$)/)
 
   return {
     resourceSlug: resourceMatch ? decodeURIComponent(resourceMatch[1]) : null,
     projectSlug: projectMatch ? decodeURIComponent(projectMatch[1]) : null,
-    page: pageMatch ? pageMatch[1] : null,
+    page: courseWeekMatch ? 'course-week' : pageMatch ? pageMatch[1] : null,
+    courseWeekNumber: courseWeekMatch ? Number(courseWeekMatch[1]) : null,
   }
 }
 
@@ -509,6 +511,18 @@ function getSuggestedCourseWeek(progress) {
   return courseWeeks.find((week) => !isCourseWeekComplete(week, progress)) || null
 }
 
+function getCourseWeekByNumber(weekNumber) {
+  return courseWeeks.find((week) => week.weekNumber === weekNumber) || null
+}
+
+function getCourseTasksByType(week, type) {
+  return week.tasks.filter((task) => task.type === type)
+}
+
+function findRecommendedQuestion(text) {
+  return interviewQuestions.find((question) => question.id === text || question.question === text) || null
+}
+
 function formatDateTime(value) {
   if (!value) {
     return '暂无记录'
@@ -656,6 +670,44 @@ function buildMockInterviewMarkdown(progress) {
   ].join('\n')
 }
 
+function buildWeekReportMarkdown(week, progress) {
+  const completedTasks = week.tasks.filter((task) => progress.courseTasks[task.id])
+  const incompleteTasks = week.tasks.filter((task) => !progress.courseTasks[task.id])
+
+  return [
+    `# 第 ${week.weekNumber} 周学习周报：${week.title}`,
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    '',
+    '## 本周目标',
+    week.goal,
+    '',
+    '## 已完成任务',
+    ...(completedTasks.length > 0 ? completedTasks.map((task) => `- [x] ${task.label}`) : ['- 暂无']),
+    '',
+    '## 未完成任务',
+    ...(incompleteTasks.length > 0 ? incompleteTasks.map((task) => `- [ ] ${task.label}`) : ['- 暂无']),
+    '',
+    '## 学习资源',
+    ...week.resourceLinks.map((resource) => `- [${resource.label}](${resource.href})：${resource.description}`),
+    '',
+    '## 项目任务',
+    ...week.projectTasks.map((task) => `- ${task}`),
+    '',
+    '## 面试训练',
+    ...week.interviewTasks.map((task) => `- ${task}`),
+    '',
+    '## 本周产出',
+    ...week.deliverables.map((item) => `- ${item}`),
+    '',
+    '## 复盘',
+    '- 本周最难的概念：',
+    '- 本周最卡的代码：',
+    '- 本周最需要补的题：',
+    '- 下周要优先改进的地方：',
+  ].join('\n')
+}
+
 function ProgressCheckbox({ checked, label, onChange }) {
   return (
     <label className={checked ? 'progress-checkbox is-checked' : 'progress-checkbox'}>
@@ -737,6 +789,7 @@ function DashboardPage({ progress, onToggle, onReset }) {
   const practicedQuestions = countCompleted(interviewQuestions, progress.questionPracticed)
   const completedCourseTasks = getCompletedCourseTaskCount(progress)
   const suggestedCourseWeek = getSuggestedCourseWeek(progress)
+  const currentCourseHref = progress.activeCourseWeek ? `#/course/week/${progress.activeCourseWeek}` : '#/course'
 
   return (
     <main className="detail-page dashboard-page">
@@ -756,6 +809,9 @@ function DashboardPage({ progress, onToggle, onReset }) {
           </a>
           <a className="button primary" href="#/course">
             查看课程路径
+          </a>
+          <a className="button secondary" href={currentCourseHref}>
+            查看当前周详情
           </a>
           <a className="button secondary" href="#/review">
             查看错题复盘
@@ -1476,6 +1532,9 @@ function CourseWeekCard({ progress, week, onSetActiveWeek, onToggleTask }) {
       <CourseTaskChecklist progress={progress} tasks={week.tasks} onToggleTask={onToggleTask} />
 
       <div className="detail-actions course-week-actions">
+        <a className="button primary" href={`#/course/week/${week.weekNumber}`}>
+          查看本周详情
+        </a>
         <button className={active ? 'button primary' : 'button secondary'} type="button" onClick={() => onSetActiveWeek(week.weekNumber)}>
           {active ? '当前学习周' : '设为当前学习周'}
         </button>
@@ -1544,6 +1603,268 @@ function CoursePage({ progress, onSetActiveWeek, onToggleTask }) {
           <h2>完成每周学习后，建议前往错题复盘页导出学习进度 Markdown。</h2>
           <a href="#/review">导出复盘请前往 #/review</a>
         </section>
+      </div>
+    </main>
+  )
+}
+
+function WeekTaskPanel({ entryHref, entryLabel, progress, tasks, title, onToggleTask }) {
+  return (
+    <DetailSection id={title.replace(/\s/g, '-')} title={title}>
+      <div className="course-detail-task-list">
+        {tasks.map((item) => (
+          <article className={progress.courseTasks[item.id] ? 'course-detail-task is-complete' : 'course-detail-task'} key={item.id}>
+            <ProgressCheckbox
+              checked={Boolean(progress.courseTasks[item.id])}
+              label={item.label}
+              onChange={(checked) => onToggleTask(item.id, checked)}
+            />
+            <a href={entryHref}>{entryLabel}</a>
+          </article>
+        ))}
+      </div>
+    </DetailSection>
+  )
+}
+
+function WeekLearningRoute({ week }) {
+  return (
+    <DetailSection id="week-route" title="本周学习路线">
+      <div className="week-route-grid">
+        <article>
+          <span>01</span>
+          <h3>先学资源页</h3>
+          <p>{week.resourceLinks.map((resource) => resource.label).join('、')}</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>再做 Mini GPT 任务</h3>
+          <p>{week.projectTasks.join('；')}</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>然后练面试题</h3>
+          <p>{week.interviewTasks.join('；')}</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>最后复盘</h3>
+          <p>{week.reviewPrompt}</p>
+        </article>
+      </div>
+    </DetailSection>
+  )
+}
+
+function WeekResourceLinks({ progress, resources, tasks, onToggleTask }) {
+  return (
+    <DetailSection id="week-resources" title="推荐学习页">
+      <div className="week-resource-grid">
+        {resources.map((resource) => (
+          <article className="week-resource-card" key={resource.href}>
+            <h3>{resource.label}</h3>
+            <p>{resource.description}</p>
+            <a className="button secondary" href={resource.href}>
+              进入学习页
+            </a>
+          </article>
+        ))}
+      </div>
+      {tasks.length > 0 ? (
+        <div className="course-detail-task-list resource-task-checklist">
+          {tasks.map((item) => (
+            <article className={progress.courseTasks[item.id] ? 'course-detail-task is-complete' : 'course-detail-task'} key={item.id}>
+              <ProgressCheckbox
+                checked={Boolean(progress.courseTasks[item.id])}
+                label={item.label}
+                onChange={(checked) => onToggleTask(item.id, checked)}
+              />
+              <span>resource</span>
+            </article>
+          ))}
+        </div>
+      ) : null}
+    </DetailSection>
+  )
+}
+
+function WeekDeliverables({ progress, tasks, week, onToggleTask }) {
+  return (
+    <DetailSection id="week-deliverables" title="本周产出">
+      <p>鼓励把本周学习沉淀成笔记、代码、讲稿或复盘文档。</p>
+      <div className="course-detail-task-list">
+        {tasks.map((item) => (
+          <article className={progress.courseTasks[item.id] ? 'course-detail-task is-complete' : 'course-detail-task'} key={item.id}>
+            <ProgressCheckbox
+              checked={Boolean(progress.courseTasks[item.id])}
+              label={item.label}
+              onChange={(checked) => onToggleTask(item.id, checked)}
+            />
+            <span>{week.deliverables.includes(item.label.replace(/^完成\s*/, '')) ? '本周产出' : '交付物'}</span>
+          </article>
+        ))}
+      </div>
+    </DetailSection>
+  )
+}
+
+function WeekRecommendedQuestions({ questions }) {
+  return (
+    <DetailSection id="week-questions" title="推荐题目">
+      <div className="week-question-grid">
+        {questions.map((text) => {
+          const matchedQuestion = findRecommendedQuestion(text)
+          return (
+            <article className="week-question-card" key={text}>
+              <div className="question-card-head">
+                <span>{matchedQuestion?.category || '推荐练习'}</span>
+                <strong>{matchedQuestion?.difficulty || '按需'}</strong>
+              </div>
+              <h3>{matchedQuestion?.question || text}</h3>
+              {matchedQuestion ? <p>{matchedQuestion.focus}</p> : <p>进入题库后按关键词或相关分类练习。</p>}
+              <a className="button secondary" href="#/interview-bank">
+                进入题库练习
+              </a>
+            </article>
+          )
+        })}
+      </div>
+    </DetailSection>
+  )
+}
+
+function WeekReportExport({ progress, week }) {
+  const [markdown, setMarkdown] = useState('')
+  const [copyStatus, setCopyStatus] = useState('')
+  const currentMarkdown = markdown || buildWeekReportMarkdown(week, progress)
+
+  const generateMarkdown = () => {
+    setMarkdown(buildWeekReportMarkdown(week, progress))
+    setCopyStatus('已生成，可复制或手动选中文本')
+  }
+
+  const copyMarkdown = async () => {
+    const text = markdown || buildWeekReportMarkdown(week, progress)
+    setMarkdown(text)
+    if (!navigator.clipboard?.writeText) {
+      setCopyStatus('已生成，可手动复制')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus('已复制')
+    } catch {
+      setCopyStatus('复制失败，可手动复制')
+    }
+  }
+
+  return (
+    <DetailSection id="week-report" title="周报 Markdown 导出">
+      <div className="markdown-export-panel">
+        <div className="markdown-output-head">
+          <p>本周周报 Markdown</p>
+          <div className="week-report-actions">
+            <button className="button secondary" type="button" onClick={generateMarkdown}>
+              生成本周周报 Markdown
+            </button>
+            <button className="button primary" type="button" onClick={copyMarkdown}>
+              复制 Markdown
+            </button>
+          </div>
+        </div>
+        {copyStatus ? <div className="copy-status">{copyStatus}</div> : null}
+        <textarea className="markdown-output" readOnly value={currentMarkdown} aria-label="本周周报 Markdown" />
+      </div>
+    </DetailSection>
+  )
+}
+
+function CourseWeekDetailPage({ progress, week, onSetActiveWeek, onToggleTask }) {
+  if (!week) {
+    return (
+      <main className="detail-page">
+        <a className="back-link" href="#/course">
+          返回课程路径
+        </a>
+        <section className="detail-hero">
+          <p>Course Week Not Found</p>
+          <h1>没有找到这一周的课程</h1>
+          <span>请回到课程路径，选择第 1 到第 12 周。</span>
+        </section>
+      </main>
+    )
+  }
+
+  const active = progress.activeCourseWeek === week.weekNumber
+  const resourceTasks = getCourseTasksByType(week, 'resource')
+  const projectTasksForWeek = getCourseTasksByType(week, 'project')
+  const interviewTasksForWeek = getCourseTasksByType(week, 'interview')
+  const deliverableTasks = getCourseTasksByType(week, 'deliverable')
+
+  return (
+    <main className="detail-page course-week-detail-page">
+      <a className="back-link" href="#/course">
+        返回课程路径
+      </a>
+      <section className="detail-hero">
+        <p>Week {week.weekNumber}</p>
+        <h1>{week.title}</h1>
+        <span>{week.goal}</span>
+        <div className="course-week-hero-meta">
+          <span>{week.theme}</span>
+          <strong>{active ? '当前学习周' : '未设为当前学习周'}</strong>
+        </div>
+        <div className="detail-actions">
+          <button className={active ? 'button primary' : 'button secondary'} type="button" onClick={() => onSetActiveWeek(week.weekNumber)}>
+            {active ? '当前学习周' : '设为当前学习周'}
+          </button>
+          <a className="button secondary" href="#/dashboard">
+            查看 Dashboard
+          </a>
+        </div>
+      </section>
+
+      <div className="project-detail-content">
+        <WeekLearningRoute week={week} />
+        <WeekResourceLinks
+          progress={progress}
+          resources={week.resourceLinks}
+          tasks={resourceTasks}
+          onToggleTask={onToggleTask}
+        />
+        <WeekTaskPanel
+          entryHref="#/projects/mini-gpt"
+          entryLabel="Mini GPT 项目页"
+          progress={progress}
+          tasks={projectTasksForWeek}
+          title="项目任务"
+          onToggleTask={onToggleTask}
+        />
+        <WeekTaskPanel
+          entryHref="#/interview-bank"
+          entryLabel="进入题库"
+          progress={progress}
+          tasks={interviewTasksForWeek.length > 0 ? interviewTasksForWeek : resourceTasks.filter((task) => task.id.includes('bank'))}
+          title="面试训练任务"
+          onToggleTask={onToggleTask}
+        />
+        <div className="week-interview-actions">
+          <a className="button secondary" href="#/interview-bank">
+            进入题库
+          </a>
+          <a className="button secondary" href="#/mock-interview">
+            开始 Mock Interview
+          </a>
+        </div>
+        <WeekDeliverables progress={progress} tasks={deliverableTasks} week={week} onToggleTask={onToggleTask} />
+        <WeekRecommendedQuestions questions={week.recommendedQuestions} />
+        <section className="project-next-callout" aria-label="本周复盘提示">
+          <p>Weekly Review</p>
+          <h2>{week.reviewPrompt}</h2>
+          <a href="#/review">前往错题复盘与导出</a>
+        </section>
+        <WeekReportExport progress={progress} week={week} />
       </div>
     </main>
   )
@@ -2170,7 +2491,7 @@ function SiteFooter() {
 }
 
 function App() {
-  const { resourceSlug, projectSlug, page } = useHashRoute()
+  const { resourceSlug, projectSlug, page, courseWeekNumber } = useHashRoute()
   const {
     progress,
     recordExport,
@@ -2183,6 +2504,7 @@ function App() {
   } = useLocalProgress()
   const selectedResource = resourceSlug ? resourcesBySlug[resourceSlug] : null
   const selectedProject = projectSlug ? projectsBySlug[projectSlug] : null
+  const selectedCourseWeek = courseWeekNumber ? getCourseWeekByNumber(courseWeekNumber) : null
 
   useEffect(() => {
     if (resourceSlug || projectSlug || page) {
@@ -2194,7 +2516,7 @@ function App() {
     if (anchorId) {
       requestAnimationFrame(() => document.getElementById(anchorId)?.scrollIntoView())
     }
-  }, [resourceSlug, projectSlug, page])
+  }, [resourceSlug, projectSlug, page, courseWeekNumber])
 
   return (
     <div id="top" className="app-shell">
@@ -2219,6 +2541,13 @@ function App() {
       ) : page === 'course' ? (
         <CoursePage
           progress={progress}
+          onSetActiveWeek={setActiveCourseWeek}
+          onToggleTask={toggleCourseTask}
+        />
+      ) : page === 'course-week' ? (
+        <CourseWeekDetailPage
+          progress={progress}
+          week={selectedCourseWeek}
           onSetActiveWeek={setActiveCourseWeek}
           onToggleTask={toggleCourseTask}
         />
