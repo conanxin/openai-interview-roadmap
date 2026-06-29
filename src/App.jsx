@@ -13,6 +13,7 @@ import {
   resourcesProgressItems,
   weeklyPlanItems,
 } from './data/progress'
+import { mockInterviewModes, mockReviewPrompts } from './data/mockInterview'
 import { projectsBySlug } from './data/projects'
 import { interviewQuestions, questionCategories } from './data/questions'
 import { resources, resourcesBySlug } from './data/resources'
@@ -27,6 +28,7 @@ const emptyProgress = {
   interviewCompletion: {},
   questionPracticed: {},
   questionMastered: {},
+  lastMockInterview: null,
 }
 
 const navItems = [
@@ -69,7 +71,7 @@ function getDetailNavItems(resource) {
 function getRouteFromHash() {
   const resourceMatch = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
   const projectMatch = window.location.hash.match(/^#\/projects\/([^/?#]+)/)
-  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank)(?:[/?#]|$)/)
+  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank|mock-interview)(?:[/?#]|$)/)
 
   return {
     resourceSlug: resourceMatch ? decodeURIComponent(resourceMatch[1]) : null,
@@ -145,7 +147,14 @@ function useLocalProgress() {
     setProgress(emptyProgress)
   }
 
-  return { progress, resetProgress, toggleProgress, toggleQuestionMastered }
+  const saveMockInterview = (result) => {
+    setProgress((current) => ({
+      ...current,
+      lastMockInterview: result,
+    }))
+  }
+
+  return { progress, resetProgress, saveMockInterview, toggleProgress, toggleQuestionMastered }
 }
 
 function Header() {
@@ -392,6 +401,54 @@ function countCompleted(items, bucket) {
   return items.filter((item) => bucket[item.id]).length
 }
 
+function shuffleItems(items) {
+  const shuffled = [...items]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const current = shuffled[index]
+    shuffled[index] = shuffled[swapIndex]
+    shuffled[swapIndex] = current
+  }
+  return shuffled
+}
+
+function selectMockQuestions(mode) {
+  const selected = []
+  const seenIds = new Set()
+  const addQuestion = (question) => {
+    if (selected.length >= mode.count || seenIds.has(question.id)) {
+      return
+    }
+
+    selected.push(question)
+    seenIds.add(question.id)
+  }
+
+  const prioritized = mode.categories
+    ? interviewQuestions.filter((question) => mode.categories.includes(question.category))
+    : interviewQuestions
+
+  shuffleItems(prioritized).forEach(addQuestion)
+  shuffleItems(interviewQuestions).forEach(addQuestion)
+
+  return selected
+}
+
+function getCategoryDistribution(questions) {
+  return questions.reduce((distribution, question) => {
+    distribution[question.category] = (distribution[question.category] || 0) + 1
+    return distribution
+  }, {})
+}
+
+function getSuggestedResources(questions) {
+  const resourcesMap = new Map()
+  questions.forEach((question) => {
+    resourcesMap.set(question.resourceHref, question.resourceLabel)
+  })
+  return [...resourcesMap.entries()].map(([href, label]) => ({ href, label }))
+}
+
 function ProgressCheckbox({ checked, label, onChange }) {
   return (
     <label className={checked ? 'progress-checkbox is-checked' : 'progress-checkbox'}>
@@ -485,6 +542,9 @@ function DashboardPage({ progress, onToggle, onReset }) {
           <a className="button primary" href="#/interview-bank">
             进入面试题库
           </a>
+          <a className="button primary" href="#/mock-interview">
+            开始一次 Mock Interview
+          </a>
           <button className="button secondary" type="button" onClick={onReset}>
             重置本地进度
           </button>
@@ -575,6 +635,9 @@ function InterviewBankPage({ progress, onToggle, onToggleMastered }) {
           <a className="button primary" href="#/dashboard">
             查看学习进度
           </a>
+          <a className="button primary" href="#/mock-interview">
+            用当前题库开始 Mock Interview
+          </a>
           <a className="button secondary" href="#/projects/mini-gpt">
             Mini GPT 项目
           </a>
@@ -624,6 +687,277 @@ function InterviewBankPage({ progress, onToggle, onToggleMastered }) {
           </div>
         </DetailSection>
       </div>
+    </main>
+  )
+}
+
+function MockModeSelection({ onStart, lastMockInterview }) {
+  return (
+    <div className="project-detail-content">
+      <DetailSection id="mock-mode" title="选择模拟模式">
+        <div className="mock-mode-grid">
+          {mockInterviewModes.map((mode) => (
+            <article className="mock-mode-card" key={mode.id}>
+              <p>{mode.count} 道题 · {mode.scope}</p>
+              <h3>{mode.name}</h3>
+              <span>{mode.description}</span>
+              <button className="button primary" type="button" onClick={() => onStart(mode)}>
+                开始{mode.name}
+              </button>
+            </article>
+          ))}
+        </div>
+      </DetailSection>
+
+      {lastMockInterview ? (
+        <DetailSection id="last-mock" title="最近一次模拟记录">
+          <div className="last-mock-card">
+            <div>
+              <p>模式：{mockInterviewModes.find((mode) => mode.id === lastMockInterview.mode)?.name || lastMockInterview.mode}</p>
+              <p>完成时间：{new Date(lastMockInterview.completedAt).toLocaleString('zh-CN')}</p>
+            </div>
+            <div className="dashboard-stat-grid compact-stat-grid">
+              <DashboardStat label="题目数" value={lastMockInterview.questionIds.length} />
+              <DashboardStat label="已掌握" value={lastMockInterview.masteredIds.length} />
+              <DashboardStat label="待补强" value={lastMockInterview.weakIds.length} />
+            </div>
+          </div>
+        </DetailSection>
+      ) : null}
+    </div>
+  )
+}
+
+function MockQuestionPanel({
+  currentIndex,
+  onEnd,
+  onMarkMastered,
+  onMarkPracticed,
+  onMove,
+  practiced,
+  mastered,
+  question,
+  questions,
+  showAnswer,
+  toggleAnswer,
+}) {
+  return (
+    <div className="project-detail-content">
+      <DetailSection id="mock-question" title={`第 ${currentIndex + 1} 题 / 共 ${questions.length} 题`}>
+        <article className="mock-question-card">
+          <div className="question-card-head">
+            <span>{question.category}</span>
+            <strong>{question.difficulty}</strong>
+          </div>
+          <h3>{question.question}</h3>
+          <dl>
+            <div>
+              <dt>考察点</dt>
+              <dd>{question.focus}</dd>
+            </div>
+          </dl>
+          <button className="button secondary answer-toggle" type="button" onClick={toggleAnswer}>
+            {showAnswer ? '隐藏回答思路' : '显示回答思路'}
+          </button>
+          {showAnswer ? (
+            <div className="mock-answer-box">
+              <p>{question.answer}</p>
+              <a href={question.resourceHref}>{question.resourceLabel}</a>
+            </div>
+          ) : null}
+        </article>
+
+        <div className="mock-control-row">
+          <button className="button secondary" type="button" disabled={currentIndex === 0} onClick={() => onMove(-1)}>
+            上一题
+          </button>
+          <button className="button secondary" type="button" disabled={currentIndex === questions.length - 1} onClick={() => onMove(1)}>
+            下一题
+          </button>
+          <button className={practiced ? 'button primary' : 'button secondary'} type="button" onClick={onMarkPracticed}>
+            {practiced ? '已练习' : '标记已练习'}
+          </button>
+          <button className={mastered ? 'button primary' : 'button secondary'} type="button" onClick={onMarkMastered}>
+            {mastered ? '已掌握' : '标记已掌握'}
+          </button>
+          <button className="button primary" type="button" onClick={onEnd}>
+            结束并复盘
+          </button>
+        </div>
+      </DetailSection>
+    </div>
+  )
+}
+
+function MockReviewPage({ mode, questions, progress, result, onRestart }) {
+  const distribution = getCategoryDistribution(questions)
+  const weakQuestions = questions.filter((question) => result.weakIds.includes(question.id))
+  const suggestedResources = getSuggestedResources(weakQuestions.length > 0 ? weakQuestions : questions)
+
+  return (
+    <div className="project-detail-content">
+      <DetailSection id="mock-review" title="本次模拟面试复盘">
+        <div className="dashboard-stat-grid">
+          <DashboardStat label="模式" value={mode.name} />
+          <DashboardStat label="题目数" value={questions.length} />
+          <DashboardStat label="标记已掌握" value={result.masteredIds.length} />
+          <DashboardStat label="待补强题目" value={result.weakIds.length} />
+        </div>
+
+        <div className="mock-review-grid">
+          <article className="mock-review-card">
+            <h3>分类分布</h3>
+            <div className="concept-cloud">
+              {Object.entries(distribution).map(([category, count]) => (
+                <span key={category}>{category} · {count}</span>
+              ))}
+            </div>
+          </article>
+
+          <article className="mock-review-card">
+            <h3>建议补习的学习页</h3>
+            <div className="mock-resource-list">
+              {suggestedResources.map((resource) => (
+                <a href={resource.href} key={resource.href}>
+                  {resource.label}
+                </a>
+              ))}
+            </div>
+          </article>
+        </div>
+      </DetailSection>
+
+      <DetailSection id="mock-question-list" title="本次模拟面试题目列表">
+        <div className="mock-question-list">
+          {questions.map((question, index) => (
+            <article className={progress.questionMastered[question.id] ? 'mock-list-item is-mastered' : 'mock-list-item'} key={question.id}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <div>
+                <h3>{question.question}</h3>
+                <p>{question.category} · {question.difficulty}</p>
+              </div>
+              <strong>{progress.questionMastered[question.id] ? '已掌握' : '待补强'}</strong>
+            </article>
+          ))}
+        </div>
+      </DetailSection>
+
+      <DetailSection id="mock-weak-list" title="未掌握题目列表">
+        {weakQuestions.length > 0 ? (
+          <div className="mock-question-list">
+            {weakQuestions.map((question) => (
+              <article className="mock-list-item" key={question.id}>
+                <span>{question.category}</span>
+                <div>
+                  <h3>{question.question}</h3>
+                  <p>{question.focus}</p>
+                </div>
+                <a href={question.resourceHref}>补习</a>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p>本次题目都已标记掌握。下一步可以换一个模式，或者提升回答速度和结构化程度。</p>
+        )}
+      </DetailSection>
+
+      <DetailSection id="mock-review-template" title="面试复盘模板">
+        <InterviewReviewTemplate fields={mockReviewPrompts} />
+        <div className="detail-actions">
+          <button className="button primary" type="button" onClick={onRestart}>
+            再来一场
+          </button>
+          <a className="button secondary" href="#/dashboard">
+            回到 Dashboard
+          </a>
+        </div>
+      </DetailSection>
+    </div>
+  )
+}
+
+function MockInterviewPage({ progress, onSaveMockInterview, onToggle, onToggleMastered }) {
+  const [session, setSession] = useState(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [showAnswer, setShowAnswer] = useState(false)
+  const [reviewResult, setReviewResult] = useState(null)
+  const currentQuestion = session?.questions[currentIndex]
+
+  const startSession = (mode) => {
+    setSession({ mode, questions: selectMockQuestions(mode) })
+    setCurrentIndex(0)
+    setShowAnswer(false)
+    setReviewResult(null)
+  }
+
+  const moveQuestion = (direction) => {
+    setCurrentIndex((index) => Math.min(Math.max(index + direction, 0), session.questions.length - 1))
+    setShowAnswer(false)
+  }
+
+  const finishSession = () => {
+    const questionIds = session.questions.map((question) => question.id)
+    const masteredIds = questionIds.filter((id) => progress.questionMastered[id])
+    const weakIds = questionIds.filter((id) => !progress.questionMastered[id])
+    const result = {
+      mode: session.mode.id,
+      questionIds,
+      completedAt: new Date().toISOString(),
+      masteredIds,
+      weakIds,
+    }
+
+    onSaveMockInterview(result)
+    setReviewResult(result)
+  }
+
+  return (
+    <main className="detail-page mock-interview-page">
+      <a className="back-link" href="#top">
+        返回首页
+      </a>
+      <section className="detail-hero">
+        <p>V5B Mock Interview</p>
+        <h1>Mock Interview</h1>
+        <span>从题库中抽取问题，模拟 OpenAI / AI Lab 面试流程，训练回答结构、项目表达和复盘能力。</span>
+        <div className="detail-actions">
+          <a className="button secondary" href="#/interview-bank">
+            查看题库
+          </a>
+          <a className="button secondary" href="#/dashboard">
+            学习进度
+          </a>
+        </div>
+      </section>
+
+      {!session ? (
+        <MockModeSelection lastMockInterview={progress.lastMockInterview} onStart={startSession} />
+      ) : reviewResult ? (
+        <MockReviewPage
+          mode={session.mode}
+          progress={progress}
+          questions={session.questions}
+          result={reviewResult}
+          onRestart={() => {
+            setSession(null)
+            setReviewResult(null)
+          }}
+        />
+      ) : (
+        <MockQuestionPanel
+          currentIndex={currentIndex}
+          mastered={Boolean(progress.questionMastered[currentQuestion.id])}
+          practiced={Boolean(progress.questionPracticed[currentQuestion.id])}
+          question={currentQuestion}
+          questions={session.questions}
+          showAnswer={showAnswer}
+          onEnd={finishSession}
+          onMarkMastered={() => onToggleMastered(currentQuestion.id, true)}
+          onMarkPracticed={() => onToggle('questionPracticed', currentQuestion.id, true)}
+          onMove={moveQuestion}
+          toggleAnswer={() => setShowAnswer((visible) => !visible)}
+        />
+      )}
     </main>
   )
 }
@@ -905,6 +1239,9 @@ function HomePage() {
             </a>
             <a className="button secondary" href="#/interview-bank">
               面试题库
+            </a>
+            <a className="button secondary" href="#/mock-interview">
+              开始模拟面试
             </a>
           </div>
         </div>
@@ -1214,6 +1551,7 @@ function App() {
   const {
     progress,
     resetProgress,
+    saveMockInterview,
     toggleProgress,
     toggleQuestionMastered,
   } = useLocalProgress()
@@ -1239,6 +1577,13 @@ function App() {
         <DashboardPage progress={progress} onToggle={toggleProgress} onReset={resetProgress} />
       ) : page === 'interview-bank' ? (
         <InterviewBankPage progress={progress} onToggle={toggleProgress} onToggleMastered={toggleQuestionMastered} />
+      ) : page === 'mock-interview' ? (
+        <MockInterviewPage
+          progress={progress}
+          onSaveMockInterview={saveMockInterview}
+          onToggle={toggleProgress}
+          onToggleMastered={toggleQuestionMastered}
+        />
       ) : projectSlug ? (
         <ProjectDetail project={selectedProject} />
       ) : resourceSlug ? (

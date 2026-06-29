@@ -111,6 +111,19 @@ V5A 支持：
 - 不需要后端、数据库、账号或云同步。
 - 首页 Hero 和 Mini GPT 项目区都提供训练系统入口。
 
+## V5B：Mock Interview 模式
+
+V5B 新增 `#/mock-interview`，把题库进一步升级为结构化模拟面试训练模式。
+
+新增能力：
+
+- 支持 4 种模拟方式：快速练习、技术面试、项目面试、全流程模拟。
+- 从内置题库中按模式抽题，同一场模拟中不重复题目。
+- 答题时默认隐藏推荐回答思路，可以手动显示。
+- 支持在流程中标记“已练习 / 已掌握”，并复用题库的本地状态。
+- 结束后生成复盘页，展示题目列表、分类分布、未掌握题目、建议补习资源页和面试复盘模板。
+- 继续使用 `openai-roadmap-progress` 这一个 `localStorage` key，并新增最近一次 mock interview 结果记录。
+
 ## Related Projects
 
 - `mini-gpt-from-scratch`：真实 Python + PyTorch Mini GPT 代码作品集，https://github.com/conanxin/mini-gpt-from-scratch
@@ -118,7 +131,6 @@ V5A 支持：
 
 后续计划：
 
-- V5B：增加 Mock Interview 模式
 - V5C：增加错题复盘和导出 Markdown
 - V6：连续课程路径和学习 dashboard
 - V7：简历 / 项目展示 / mock interview 工具区
