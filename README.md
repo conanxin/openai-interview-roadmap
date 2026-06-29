@@ -185,6 +185,34 @@ V7A 新增 `#/portfolio`，把 Mini GPT 项目、AI Lab 面试训练记录和 12
 - Markdown 导出：支持简历 bullet、项目 pitch、Behavioral stories 和完整 Portfolio Packet。
 - 本地草稿保存：继续使用 `openai-roadmap-progress.portfolioDrafts`，不需要后端和账号。
 
+## V7B：Resume Bullet Optimizer
+
+V7B 把 Portfolio 页中的简历 bullet 区升级为“简历项目段落优化器”。
+
+新增能力：
+
+- 支持按目标岗位、项目、表达强度和长度生成英文简历表达。
+- 目标岗位覆盖 Research Engineer、GenAI Application Engineer、AI Product / Tooling Engineer、LLM Infrastructure / Systems Engineer。
+- 项目范围支持 `openai-interview-roadmap`、`mini-gpt-from-scratch` 和 both projects。
+- 用户可以补充目标公司 / 岗位备注、技术关键词、想强调的结果和想避免的表述。
+- 输出 3 条简历 bullet、项目描述、LinkedIn / GitHub profile 描述和面试展开解释。
+- 每种输出都支持复制，并可加入完整 Portfolio Packet Markdown。
+- 继续使用 `openai-roadmap-progress.portfolioDrafts.resumeOptimizer` 保存本地草稿和已加入 Packet 的输出。
+
+## V7C：Behavioral Story Deep Editor
+
+V7C 把 Portfolio 页中的 Behavioral Stories 区升级为“面试故事库深度编辑器”。
+
+新增能力：
+
+- 故事模板扩展为 8 类：debug、快速学习、从想法到上线、范围取舍、失败调整、AI Lab 动机、协作冲突、主动推动不确定项目。
+- 每个故事支持 STAR 结构化编辑：Situation、Task、Action、Result、Evidence / Metric、Reflection、Risks to Avoid。
+- 支持完整度检查，显示百分比、缺失项和“可用于面试 / 需要补充”状态。
+- 内置故事面试追问，并支持填写追问回答。
+- 静态生成 30 秒版、2 分钟版和深挖版讲法，不调用 AI API。
+- Behavioral Stories Markdown 和完整 Portfolio Packet Markdown 已增强，会包含 STAR 字段、完整度、三种讲法、追问回答和风险提醒。
+- 继续使用 `openai-roadmap-progress.portfolioDrafts.behavioralStoryDrafts` 保存结构化故事草稿。
+
 ## Related Projects
 
 - `mini-gpt-from-scratch`：真实 Python + PyTorch Mini GPT 代码作品集，https://github.com/conanxin/mini-gpt-from-scratch
@@ -192,10 +220,9 @@ V7A 新增 `#/portfolio`，把 Mini GPT 项目、AI Lab 面试训练记录和 12
 
 后续计划：
 
-- V7B：简历项目段落优化器
-- V7C：面试故事库深度编辑器
 - V8：公开学习日志与周报模板
-- V9：多语言版本 / 英文站点
+- V9：英文站点版本
+- V10：真实求职投递追踪器
 
 ## 项目目的
 

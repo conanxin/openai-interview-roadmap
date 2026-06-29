@@ -21,6 +21,10 @@ import {
   portfolioExportTemplates,
   portfolioProjects,
   projectPitchTemplates,
+  resumeOptimizerLengths,
+  resumeOptimizerProjects,
+  resumeOptimizerRoles,
+  resumeOptimizerTones,
   resumeBulletTemplates,
 } from './data/portfolio'
 import { projectsBySlug } from './data/projects'
@@ -30,9 +34,23 @@ import './App.css'
 
 const STORAGE_KEY = 'openai-roadmap-progress'
 
+const emptyResumeOptimizer = {
+  role: 'research-engineer',
+  project: 'both-projects',
+  tone: 'conservative',
+  length: 'standard',
+  targetNote: '',
+  keywords: '',
+  outcome: '',
+  avoid: '',
+  savedOutputs: null,
+}
+
 const emptyPortfolioDrafts = {
   selectedRole: 'research-engineer',
+  resumeOptimizer: emptyResumeOptimizer,
   behavioralStories: {},
+  behavioralStoryDrafts: {},
   interviewChecklist: {},
   lastPortfolioExportedAt: null,
 }
@@ -126,9 +144,17 @@ function normalizeProgress(value = {}) {
     portfolioDrafts: {
       ...emptyPortfolioDrafts,
       ...portfolioDrafts,
+      resumeOptimizer: {
+        ...emptyResumeOptimizer,
+        ...portfolioDrafts.resumeOptimizer,
+      },
       behavioralStories: {
         ...emptyPortfolioDrafts.behavioralStories,
         ...portfolioDrafts.behavioralStories,
+      },
+      behavioralStoryDrafts: {
+        ...emptyPortfolioDrafts.behavioralStoryDrafts,
+        ...portfolioDrafts.behavioralStoryDrafts,
       },
       interviewChecklist: {
         ...emptyPortfolioDrafts.interviewChecklist,
@@ -231,17 +257,43 @@ function useLocalProgress() {
     }))
   }
 
-  const updatePortfolioStory = (storyId, value) => {
+  const updateBehavioralStoryDraft = (storyId, field, value) => {
     setProgress((current) => ({
       ...current,
       portfolioDrafts: {
         ...current.portfolioDrafts,
-        behavioralStories: {
-          ...current.portfolioDrafts.behavioralStories,
-          [storyId]: value,
+        behavioralStoryDrafts: {
+          ...current.portfolioDrafts.behavioralStoryDrafts,
+          [storyId]: {
+            ...current.portfolioDrafts.behavioralStoryDrafts[storyId],
+            [field]: value,
+          },
         },
       },
     }))
+  }
+
+  const updateBehavioralStoryFollowUp = (storyId, question, value) => {
+    setProgress((current) => {
+      const storyDraft = current.portfolioDrafts.behavioralStoryDrafts[storyId] || {}
+
+      return {
+        ...current,
+        portfolioDrafts: {
+          ...current.portfolioDrafts,
+          behavioralStoryDrafts: {
+            ...current.portfolioDrafts.behavioralStoryDrafts,
+            [storyId]: {
+              ...storyDraft,
+              followUpAnswers: {
+                ...storyDraft.followUpAnswers,
+                [question]: value,
+              },
+            },
+          },
+        },
+      }
+    })
   }
 
   const togglePortfolioChecklist = (id, checked) => {
@@ -267,6 +319,35 @@ function useLocalProgress() {
     }))
   }
 
+  const updateResumeOptimizer = (field, value) => {
+    setProgress((current) => ({
+      ...current,
+      portfolioDrafts: {
+        ...current.portfolioDrafts,
+        resumeOptimizer: {
+          ...current.portfolioDrafts.resumeOptimizer,
+          [field]: value,
+        },
+      },
+    }))
+  }
+
+  const saveResumeOptimizerOutputs = (outputs) => {
+    setProgress((current) => ({
+      ...current,
+      portfolioDrafts: {
+        ...current.portfolioDrafts,
+        resumeOptimizer: {
+          ...current.portfolioDrafts.resumeOptimizer,
+          savedOutputs: {
+            ...outputs,
+            savedAt: new Date().toISOString(),
+          },
+        },
+      },
+    }))
+  }
+
   return {
     progress,
     recordExport,
@@ -275,11 +356,14 @@ function useLocalProgress() {
     saveMockInterview,
     setActiveCourseWeek,
     setPortfolioRole,
+    saveResumeOptimizerOutputs,
     toggleCourseTask,
     togglePortfolioChecklist,
     toggleProgress,
     toggleQuestionMastered,
-    updatePortfolioStory,
+    updateBehavioralStoryDraft,
+    updateBehavioralStoryFollowUp,
+    updateResumeOptimizer,
   }
 }
 
@@ -1004,34 +1088,232 @@ function buildProjectPitchMarkdown() {
   ].join('\n')
 }
 
-function buildBehavioralStoriesMarkdown(drafts) {
-  const storyBlocks = behavioralStoryTemplates.map((story) => [
+const behavioralStoryFields = [
+  { id: 'situation', label: 'Situation' },
+  { id: 'task', label: 'Task' },
+  { id: 'action', label: 'Action' },
+  { id: 'result', label: 'Result' },
+  { id: 'metricsOrEvidence', label: 'Evidence / Metric' },
+  { id: 'reflection', label: 'Reflection' },
+]
+
+function getStoryDraft(drafts, story) {
+  const draft = drafts.behavioralStoryDrafts[story.id] || {}
+  const legacyNote = drafts.behavioralStories[story.id]?.trim()
+
+  return {
+    situation: draft.situation || '',
+    task: draft.task || '',
+    action: draft.action || '',
+    result: draft.result || '',
+    reflection: draft.reflection || legacyNote || '',
+    metricsOrEvidence: draft.metricsOrEvidence || '',
+    risksToAvoid: draft.risksToAvoid || '',
+    followUpAnswers: draft.followUpAnswers || {},
+  }
+}
+
+function getStoryCompleteness(draft) {
+  const completedFields = behavioralStoryFields.filter((field) => draft[field.id]?.trim())
+  const missingFields = behavioralStoryFields.filter((field) => !draft[field.id]?.trim()).map((field) => field.label)
+  const percent = Math.round((completedFields.length / behavioralStoryFields.length) * 100)
+
+  return {
+    percent,
+    missingFields,
+    ready: percent >= 80,
+  }
+}
+
+function storyValue(value, fallback) {
+  return value?.trim() || fallback
+}
+
+function buildStoryVersions(story, draft) {
+  const situation = storyValue(draft.situation, `[补充 ${story.title} 的 Situation]`)
+  const task = storyValue(draft.task, '[补充 Task]')
+  const action = storyValue(draft.action, '[补充 Action]')
+  const result = storyValue(draft.result, '[补充 Result]')
+  const reflection = storyValue(draft.reflection, '[补充 Reflection]')
+  const evidence = storyValue(draft.metricsOrEvidence, '[补充 evidence / metric]')
+
+  return {
+    short:
+      `In one story about ${story.title}, the situation was ${situation}. My task was ${task}. I focused on ${action}, and the result was ${result}. The main lesson was ${reflection}.`,
+    medium:
+      `I would use ${story.title} to show ${story.targetCompetency}. The situation was ${situation}. My responsibility was ${task}. I took action by ${action}. The result was ${result}, with evidence such as ${evidence}. What I learned was ${reflection}.`,
+    deep:
+      `For a deeper discussion, I would start with the context: ${situation}. The core challenge was ${task}. I considered the risk of overclaiming or giving a vague story, so I would anchor the answer in concrete actions: ${action}. The outcome was ${result}, supported by ${evidence}. My reflection is ${reflection}. If asked follow-up questions, I would connect the story back to ${story.targetCompetency} and be explicit about what I would improve next time.`,
+  }
+}
+
+function formatBehavioralStoryMarkdown(story, drafts) {
+  const draft = getStoryDraft(drafts, story)
+  const completeness = getStoryCompleteness(draft)
+  const versions = buildStoryVersions(story, draft)
+
+  return [
     `## ${story.title}`,
+    `- Target competency：${story.targetCompetency}`,
+    `- 完整度：${completeness.percent}%（${completeness.ready ? '可用于面试' : '需要补充'}）`,
+    completeness.missingFields.length > 0 ? `- 缺失项：${completeness.missingFields.join(' / ')}` : '- 缺失项：无',
     '',
-    `- Situation：${story.situation}`,
-    `- Task：${story.task}`,
-    `- Action：${story.action}`,
-    `- Result：${story.result}`,
-    `- 可以突出什么能力：${story.signal}`,
+    '### STAR 字段',
+    `- Situation：${draft.situation || '待填写'}`,
+    `- Task：${draft.task || '待填写'}`,
+    `- Action：${draft.action || '待填写'}`,
+    `- Result：${draft.result || '待填写'}`,
+    `- Evidence / Metric：${draft.metricsOrEvidence || '待填写'}`,
+    `- Reflection：${draft.reflection || '待填写'}`,
+    `- Risks to avoid：${draft.risksToAvoid || story.risksToAvoid.join('；')}`,
     '',
-    '### 用户版本',
-    drafts.behavioralStories[story.id]?.trim() || '待填写',
+    '### 30 秒版',
+    versions.short,
     '',
-    '### 替换提示',
-    ...story.prompts.map((prompt) => `- ${prompt}`),
-  ].join('\n'))
+    '### 2 分钟版',
+    versions.medium,
+    '',
+    '### 深挖版',
+    versions.deep,
+    '',
+    '### 追问与回答',
+    ...story.followUpQuestions.map((question) => `- ${question}：${draft.followUpAnswers[question] || '待填写'}`),
+    '',
+    '### 风险提醒',
+    ...story.risksToAvoid.map((risk) => `- ${risk}`),
+  ].join('\n')
+}
+
+function getReadyStoryCount(drafts) {
+  return behavioralStoryTemplates.filter((story) => getStoryCompleteness(getStoryDraft(drafts, story)).ready).length
+}
+
+function buildBehavioralStoriesMarkdown(drafts) {
+  const storyBlocks = behavioralStoryTemplates.map((story) => formatBehavioralStoryMarkdown(story, drafts))
 
   return [
     '# Behavioral STAR Stories',
     '',
     `生成时间：${formatDateTime(new Date().toISOString())}`,
+    `完整故事数：${getReadyStoryCount(drafts)} / ${behavioralStoryTemplates.length}`,
     '',
     ...storyBlocks,
   ].join('\n')
 }
 
+function getOptionById(items, id) {
+  return items.find((item) => item.id === id) || items[0]
+}
+
+function splitInputList(value) {
+  return (value || '')
+    .split(/[,，;；\n/]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function uniqueItems(items) {
+  return [...new Set(items.filter(Boolean))]
+}
+
+function getResumeOptimizerSelection(drafts) {
+  const optimizer = drafts.resumeOptimizer
+
+  return {
+    role: getOptionById(resumeOptimizerRoles, optimizer.role),
+    project: getOptionById(resumeOptimizerProjects, optimizer.project),
+    tone: getOptionById(resumeOptimizerTones, optimizer.tone),
+    length: getOptionById(resumeOptimizerLengths, optimizer.length),
+  }
+}
+
+function buildResumeOptimizerOutput(drafts) {
+  const optimizer = drafts.resumeOptimizer
+  const { role, project, tone, length } = getResumeOptimizerSelection(drafts)
+  const userKeywords = splitInputList(optimizer.keywords)
+  const keywords = uniqueItems([...role.keywords, ...project.stack, ...userKeywords]).slice(0, 8)
+  const targetNote = optimizer.targetNote.trim()
+  const outcome = optimizer.outcome.trim() || project.outcomes[0]
+  const avoid = optimizer.avoid.trim()
+  const targetPhrase = targetNote ? ` for ${targetNote}` : ''
+  const avoidPhrase = avoid ? ` Avoided overstating or using: ${avoid}.` : ''
+  const keywordPhrase = keywords.join(', ')
+  const capabilityPhrase = project.capabilities.slice(0, 4).join(', ')
+  const secondaryCapabilityPhrase = project.capabilities.slice(4, 8).join(', ')
+  const resultPhrase = `${outcome}; ${project.outcomes[1]}`
+
+  const shortBullets = [
+    `${tone.ownership} ${project.artifact}${targetPhrase} using ${keywordPhrase} to ${outcome}.`,
+    `Implemented ${capabilityPhrase} in ${project.scope}, keeping the work explainable and portfolio-ready.`,
+    `Tested and documented ${project.label} so the project can support resume screening, technical discussion, and interview follow-up.`,
+  ]
+  const standardBullets = [
+    `${tone.ownership} ${project.artifact}${targetPhrase} ${tone.qualifier}, using ${keywordPhrase} to ${resultPhrase}.`,
+    `Implemented ${capabilityPhrase}${secondaryCapabilityPhrase ? `, and ${secondaryCapabilityPhrase}` : ''}, making the project concrete enough for code review and interview discussion.`,
+    `Created reusable documentation and exportable artifacts around ${project.label}, helping translate LLM preparation into resume bullets, project pitch material, and follow-up talking points.`,
+  ]
+  const detailedBullets = [
+    `${tone.ownership} ${project.artifact}${targetPhrase} ${tone.qualifier}; the work combines ${keywordPhrase} with a deliberately scoped personal portfolio project that can be inspected, run, and explained without claiming production scale.`,
+    `Implemented the core project workflow around ${capabilityPhrase}${secondaryCapabilityPhrase ? `, and ${secondaryCapabilityPhrase}` : ''}; this gives interviewers concrete hooks to ask about architecture, trade-offs, testing, limitations, and next-step improvements.`,
+    `Created a portfolio-ready narrative for ${project.label} that connects implementation details, learning outcomes, and interview preparation outputs, with emphasis on ${role.angle}.`,
+  ]
+  const bulletsByLength = {
+    short: shortBullets,
+    standard: standardBullets,
+    detailed: detailedBullets,
+  }
+  const bullets = bulletsByLength[length.id] || standardBullets
+  const projectDescription = `${project.label} is ${project.scope} focused on ${project.artifact}. It covers ${project.capabilities.join(', ')} and is framed for ${role.label} roles by emphasizing ${role.angle}. ${tone.impact}.${avoidPhrase}`
+  const profileDescription = `${role.label} candidate building practical AI portfolio projects across ${keywordPhrase}. Recent work includes ${project.label}, which ${project.outcomes[2]} and turns learning artifacts into clearer resume, GitHub, and interview materials.`
+  const interviewExpansion = `In an interview, I would start by explaining the motivation for ${project.label}, then walk through the main workflow: ${project.capabilities.slice(0, 5).join(' -> ')}. I would then discuss the implementation choices, how I validated the project, what the current limitations are, and how I would extend it for a more realistic AI Lab or GenAI engineering setting.`
+
+  return {
+    selection: {
+      role: role.label,
+      project: project.label,
+      tone: tone.label,
+      length: length.label,
+      targetNote,
+      keywords: userKeywords,
+      outcome: optimizer.outcome.trim(),
+      avoid,
+    },
+    bullets,
+    projectDescription,
+    profileDescription,
+    interviewExpansion,
+  }
+}
+
+function formatResumeOptimizerMarkdown(outputs) {
+  return [
+    '## Resume Bullet Optimizer',
+    `- Role：${outputs.selection.role}`,
+    `- Project：${outputs.selection.project}`,
+    `- Tone：${outputs.selection.tone}`,
+    `- Length：${outputs.selection.length}`,
+    outputs.selection.targetNote ? `- Target note：${outputs.selection.targetNote}` : '- Target note：未填写',
+    outputs.selection.keywords.length > 0 ? `- Extra keywords：${outputs.selection.keywords.join(', ')}` : '- Extra keywords：未填写',
+    outputs.selection.outcome ? `- Emphasized outcome：${outputs.selection.outcome}` : '- Emphasized outcome：使用默认项目结果',
+    outputs.selection.avoid ? `- Avoided wording：${outputs.selection.avoid}` : '- Avoided wording：未填写',
+    '',
+    '### Generated Bullets',
+    ...outputs.bullets.map((bullet) => `- ${bullet}`),
+    '',
+    '### Project Description',
+    outputs.projectDescription,
+    '',
+    '### LinkedIn / GitHub Profile Description',
+    outputs.profileDescription,
+    '',
+    '### Interview Expansion',
+    outputs.interviewExpansion,
+  ].join('\n')
+}
+
 function buildPortfolioPacketMarkdown(drafts) {
   const role = getSelectedResumeRole(drafts)
+  const savedOptimizerOutputs = drafts.resumeOptimizer.savedOutputs
   const projectLines = portfolioProjects.flatMap((project) => [
     `## ${project.name}`,
     `- 定位：${project.positioning}`,
@@ -1058,6 +1340,9 @@ function buildPortfolioPacketMarkdown(drafts) {
     '',
     ...role.bullets.map((bullet) => `- ${bullet}`),
     '',
+    ...(savedOptimizerOutputs
+      ? [formatResumeOptimizerMarkdown(savedOptimizerOutputs), '']
+      : ['## Resume Bullet Optimizer', '尚未加入优化后的 bullet。请在 Portfolio 页面点击“加入 Portfolio Packet”。', '']),
     '# Project Pitch',
     ...projectPitchTemplates.map((project) => [
       `## ${project.projectName}`,
@@ -1065,10 +1350,9 @@ function buildPortfolioPacketMarkdown(drafts) {
     ].join('\n')),
     '',
     '# Behavioral Stories',
-    ...behavioralStoryTemplates.map((story) => [
-      `## ${story.title}`,
-      drafts.behavioralStories[story.id]?.trim() || '待填写',
-    ].join('\n')),
+    `完整故事数：${getReadyStoryCount(drafts)} / ${behavioralStoryTemplates.length}`,
+    '',
+    ...behavioralStoryTemplates.map((story) => formatBehavioralStoryMarkdown(story, drafts)),
     '',
     '# 面试前 checklist',
     ...checklistLines,
@@ -1707,7 +1991,8 @@ function MarkdownExportPanel({ markdown, onCopy, onSelect, options, selectedType
             type="button"
             onClick={() => onSelect(option.id)}
           >
-            {option.label}
+            <span>{option.label}</span>
+            {option.summary ? <small>{option.summary}</small> : null}
           </button>
         ))}
       </div>
@@ -1792,6 +2077,165 @@ function ResumeBulletBuilder({ drafts, onSelectRole }) {
   )
 }
 
+function OptimizerChoiceGroup({ label, options, selected, onChange }) {
+  return (
+    <div className="resume-optimizer-choice">
+      <p>{label}</p>
+      <div className="question-filter-row portfolio-role-row">
+        {options.map((option) => (
+          <button
+            className={selected === option.id ? 'is-active' : ''}
+            key={option.id}
+            type="button"
+            onClick={() => onChange(option.id)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ResumeOptimizerInput({ label, value, placeholder, onChange }) {
+  return (
+    <label className="resume-optimizer-input">
+      <span>{label}</span>
+      <textarea value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
+    </label>
+  )
+}
+
+function ResumeOptimizerOutputCard({ title, text, items, onCopy, onSave }) {
+  const outputText = items ? items.map((item) => `- ${item}`).join('\n') : text
+
+  return (
+    <article className="resume-optimizer-output-card">
+      <h3>{title}</h3>
+      {items ? (
+        <ul>
+          {items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>{text}</p>
+      )}
+      <div className="review-card-actions">
+        <button className="button secondary" type="button" onClick={() => onCopy(outputText, title)}>
+          复制
+        </button>
+        <button className="button primary" type="button" onClick={onSave}>
+          加入 Portfolio Packet
+        </button>
+      </div>
+    </article>
+  )
+}
+
+function ResumeBulletOptimizer({ drafts, onSaveOutputs, onUpdateOptimizer }) {
+  const [copyStatus, setCopyStatus] = useState('')
+  const optimizer = drafts.resumeOptimizer
+  const outputs = buildResumeOptimizerOutput(drafts)
+
+  const updateField = (field) => (value) => {
+    onUpdateOptimizer(field, value)
+  }
+
+  const copyOutput = async (text, title) => {
+    if (!navigator.clipboard?.writeText) {
+      setCopyStatus(`${title} 已生成，可手动复制`)
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus(`${title} 已复制`)
+    } catch {
+      setCopyStatus(`${title} 复制失败，可手动复制`)
+    }
+  }
+
+  const saveOutputs = () => {
+    onSaveOutputs(outputs)
+    setCopyStatus('已加入 Portfolio Packet')
+  }
+
+  return (
+    <div className="resume-optimizer">
+      <div className="resume-optimizer-form">
+        <OptimizerChoiceGroup
+          label="目标岗位"
+          options={resumeOptimizerRoles}
+          selected={optimizer.role}
+          onChange={updateField('role')}
+        />
+        <OptimizerChoiceGroup
+          label="项目"
+          options={resumeOptimizerProjects}
+          selected={optimizer.project}
+          onChange={updateField('project')}
+        />
+        <OptimizerChoiceGroup
+          label="表达强度"
+          options={resumeOptimizerTones}
+          selected={optimizer.tone}
+          onChange={updateField('tone')}
+        />
+        <OptimizerChoiceGroup
+          label="长度"
+          options={resumeOptimizerLengths}
+          selected={optimizer.length}
+          onChange={updateField('length')}
+        />
+        <div className="resume-optimizer-input-grid">
+          <ResumeOptimizerInput
+            label="目标公司 / 岗位备注"
+            value={optimizer.targetNote}
+            placeholder="例如：OpenAI Research Engineer, inference systems team"
+            onChange={updateField('targetNote')}
+          />
+          <ResumeOptimizerInput
+            label="想强调的技术关键词"
+            value={optimizer.keywords}
+            placeholder="例如：PyTorch, checkpointing, top-p sampling, React, localStorage"
+            onChange={updateField('keywords')}
+          />
+          <ResumeOptimizerInput
+            label="想强调的结果"
+            value={optimizer.outcome}
+            placeholder="例如：converted interview preparation into trackable project artifacts"
+            onChange={updateField('outcome')}
+          />
+          <ResumeOptimizerInput
+            label="想避免的表述"
+            value={optimizer.avoid}
+            placeholder="例如：production-scale, millions of users, SOTA claims"
+            onChange={updateField('avoid')}
+          />
+        </div>
+      </div>
+
+      <div className="resume-optimizer-result-head">
+        <h3>生成结果</h3>
+        <p>英文输出为主，使用静态模板组合生成；默认避免未经证实的规模化表述。</p>
+        {copyStatus ? <span>{copyStatus}</span> : null}
+      </div>
+
+      <div className="resume-optimizer-output-grid">
+        <ResumeOptimizerOutputCard title="3 条简历 bullet" items={outputs.bullets} onCopy={copyOutput} onSave={saveOutputs} />
+        <ResumeOptimizerOutputCard title="项目描述" text={outputs.projectDescription} onCopy={copyOutput} onSave={saveOutputs} />
+        <ResumeOptimizerOutputCard title="LinkedIn / GitHub profile 描述" text={outputs.profileDescription} onCopy={copyOutput} onSave={saveOutputs} />
+        <ResumeOptimizerOutputCard title="面试展开解释" text={outputs.interviewExpansion} onCopy={copyOutput} onSave={saveOutputs} />
+      </div>
+
+      <div className="review-summary-note portfolio-export-note">
+        <p>Portfolio Packet 中的优化器输出：{optimizer.savedOutputs ? `已加入，时间 ${formatDateTime(optimizer.savedOutputs.savedAt)}` : '尚未加入'}</p>
+      </div>
+    </div>
+  )
+}
+
 function ProjectPitchToolkit() {
   return (
     <div className="portfolio-pitch-grid">
@@ -1842,46 +2286,156 @@ function ProjectPitchToolkit() {
   )
 }
 
-function BehavioralStoryEditor({ drafts, onUpdateStory }) {
+function StoryDraftTextarea({ label, placeholder, value, onChange }) {
   return (
-    <div className="portfolio-story-grid">
-      {behavioralStoryTemplates.map((story) => (
-        <article className="portfolio-story-card" key={story.id}>
-          <h3>{story.title}</h3>
-          <dl>
-            <div>
-              <dt>Situation</dt>
-              <dd>{story.situation}</dd>
-            </div>
-            <div>
-              <dt>Task</dt>
-              <dd>{story.task}</dd>
-            </div>
-            <div>
-              <dt>Action</dt>
-              <dd>{story.action}</dd>
-            </div>
-            <div>
-              <dt>Result</dt>
-              <dd>{story.result}</dd>
-            </div>
-            <div>
-              <dt>可以突出什么能力</dt>
-              <dd>{story.signal}</dd>
-            </div>
-          </dl>
-          <div className="portfolio-followups">
-            <span>替换成你的经历时，先回答</span>
-            <BulletList items={story.prompts} />
-          </div>
-          <textarea
-            className="portfolio-story-input"
-            value={drafts.behavioralStories[story.id] || ''}
-            placeholder="在这里写你的 STAR 版本，页面会自动保存到本地。"
-            onChange={(event) => onUpdateStory(story.id, event.target.value)}
-          />
-        </article>
-      ))}
+    <label className="story-draft-field">
+      <span>{label}</span>
+      <textarea value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
+    </label>
+  )
+}
+
+function StoryVersionPreview({ title, body }) {
+  return (
+    <article className="story-version-preview">
+      <h4>{title}</h4>
+      <p>{body}</p>
+    </article>
+  )
+}
+
+function BehavioralStoryEditor({ drafts, onUpdateFollowUp, onUpdateStoryDraft }) {
+  const readyStoryCount = getReadyStoryCount(drafts)
+
+  return (
+    <div className="behavioral-editor">
+      <div className={readyStoryCount >= 5 ? 'story-readiness-callout is-ready' : 'story-readiness-callout'}>
+        <strong>{readyStoryCount >= 5 ? 'Behavioral stories 基本可用' : '建议至少准备 5 个完整故事'}</strong>
+        <p>当前完整度大于等于 80% 的故事数：{readyStoryCount} / {behavioralStoryTemplates.length}</p>
+      </div>
+
+      <div className="portfolio-story-grid">
+        {behavioralStoryTemplates.map((story) => {
+          const draft = getStoryDraft(drafts, story)
+          const completeness = getStoryCompleteness(draft)
+          const versions = buildStoryVersions(story, draft)
+
+          return (
+            <article className="portfolio-story-card" key={story.id}>
+              <div className="story-card-head">
+                <div>
+                  <p>{story.targetCompetency}</p>
+                  <h3>{story.title}</h3>
+                </div>
+                <span className={completeness.ready ? 'story-status is-ready' : 'story-status'}>
+                  {completeness.ready ? '可用于面试' : '需要补充'}
+                </span>
+              </div>
+
+              <div className="story-completeness">
+                <div>
+                  <strong>{completeness.percent}%</strong>
+                  <span>完整度</span>
+                </div>
+                <progress value={completeness.percent} max="100" />
+                <p>{completeness.missingFields.length > 0 ? `缺失项：${completeness.missingFields.join(' / ')}` : 'STAR、evidence 和 reflection 已齐全。'}</p>
+              </div>
+
+              <div className="story-template-note">
+                <p>模板提示</p>
+                <dl>
+                  <div>
+                    <dt>Situation</dt>
+                    <dd>{story.situation}</dd>
+                  </div>
+                  <div>
+                    <dt>Task</dt>
+                    <dd>{story.task}</dd>
+                  </div>
+                  <div>
+                    <dt>Action</dt>
+                    <dd>{story.action}</dd>
+                  </div>
+                  <div>
+                    <dt>Result</dt>
+                    <dd>{story.result}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="story-draft-grid">
+                <StoryDraftTextarea
+                  label="Situation"
+                  value={draft.situation}
+                  placeholder={story.situation}
+                  onChange={(value) => onUpdateStoryDraft(story.id, 'situation', value)}
+                />
+                <StoryDraftTextarea
+                  label="Task"
+                  value={draft.task}
+                  placeholder={story.task}
+                  onChange={(value) => onUpdateStoryDraft(story.id, 'task', value)}
+                />
+                <StoryDraftTextarea
+                  label="Action"
+                  value={draft.action}
+                  placeholder={story.action}
+                  onChange={(value) => onUpdateStoryDraft(story.id, 'action', value)}
+                />
+                <StoryDraftTextarea
+                  label="Result"
+                  value={draft.result}
+                  placeholder={story.result}
+                  onChange={(value) => onUpdateStoryDraft(story.id, 'result', value)}
+                />
+                <StoryDraftTextarea
+                  label="Evidence / Metric"
+                  value={draft.metricsOrEvidence}
+                  placeholder={story.metricsOrEvidence}
+                  onChange={(value) => onUpdateStoryDraft(story.id, 'metricsOrEvidence', value)}
+                />
+                <StoryDraftTextarea
+                  label="Reflection"
+                  value={draft.reflection}
+                  placeholder={story.reflection}
+                  onChange={(value) => onUpdateStoryDraft(story.id, 'reflection', value)}
+                />
+                <StoryDraftTextarea
+                  label="Risks to Avoid"
+                  value={draft.risksToAvoid}
+                  placeholder={story.risksToAvoid.join('；')}
+                  onChange={(value) => onUpdateStoryDraft(story.id, 'risksToAvoid', value)}
+                />
+              </div>
+
+              <div className="story-risk-list">
+                <span>风险提醒</span>
+                <BulletList items={story.risksToAvoid} />
+              </div>
+
+              <div className="story-follow-up-list">
+                <h4>故事面试追问</h4>
+                {story.followUpQuestions.map((question) => (
+                  <label className="story-follow-up" key={question}>
+                    <span>{question}</span>
+                    <textarea
+                      value={draft.followUpAnswers[question] || ''}
+                      placeholder="写下你会怎么回答这个追问。"
+                      onChange={(event) => onUpdateFollowUp(story.id, question, event.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="story-version-grid">
+                <StoryVersionPreview title="30 秒版" body={versions.short} />
+                <StoryVersionPreview title="2 分钟版" body={versions.medium} />
+                <StoryVersionPreview title="深挖版" body={versions.deep} />
+              </div>
+            </article>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -1903,7 +2457,16 @@ function PortfolioInterviewChecklist({ drafts, onToggleChecklist }) {
   )
 }
 
-function PortfolioPage({ progress, onRecordExport, onSelectRole, onToggleChecklist, onUpdateStory }) {
+function PortfolioPage({
+  progress,
+  onRecordExport,
+  onSaveOptimizerOutputs,
+  onSelectRole,
+  onToggleChecklist,
+  onUpdateFollowUp,
+  onUpdateOptimizer,
+  onUpdateStoryDraft,
+}) {
   const drafts = progress.portfolioDrafts
   const [exportType, setExportType] = useState('resume')
   const [copyStatus, setCopyStatus] = useState('')
@@ -1949,11 +2512,14 @@ function PortfolioPage({ progress, onRecordExport, onSelectRole, onToggleCheckli
           <a className="button primary" href="#portfolio-resume">
             生成简历项目段落
           </a>
+          <a className="button secondary" href="#portfolio-resume-optimizer">
+            Resume Bullet Optimizer
+          </a>
           <a className="button secondary" href="#portfolio-pitch">
             准备项目 Pitch
           </a>
           <a className="button secondary" href="#portfolio-stories">
-            准备 Behavioral Stories
+            Behavioral Story Deep Editor
           </a>
           <a className="button secondary" href="#portfolio-export">
             导出求职材料 Markdown
@@ -1970,12 +2536,24 @@ function PortfolioPage({ progress, onRecordExport, onSelectRole, onToggleCheckli
           <ResumeBulletBuilder drafts={drafts} onSelectRole={onSelectRole} />
         </DetailSection>
 
+        <DetailSection id="portfolio-resume-optimizer" title="Resume Bullet Optimizer">
+          <ResumeBulletOptimizer
+            drafts={drafts}
+            onSaveOutputs={onSaveOptimizerOutputs}
+            onUpdateOptimizer={onUpdateOptimizer}
+          />
+        </DetailSection>
+
         <DetailSection id="portfolio-pitch" title="项目 Pitch 区">
           <ProjectPitchToolkit />
         </DetailSection>
 
-        <DetailSection id="portfolio-stories" title="Behavioral Stories 区">
-          <BehavioralStoryEditor drafts={drafts} onUpdateStory={onUpdateStory} />
+        <DetailSection id="portfolio-stories" title="Behavioral Story Deep Editor">
+          <BehavioralStoryEditor
+            drafts={drafts}
+            onUpdateFollowUp={onUpdateFollowUp}
+            onUpdateStoryDraft={onUpdateStoryDraft}
+          />
         </DetailSection>
 
         <DetailSection id="portfolio-checklist" title="面试前 Checklist">
@@ -3176,6 +3754,7 @@ function App() {
     recordExport,
     recordPortfolioExport,
     resetProgress,
+    saveResumeOptimizerOutputs,
     saveMockInterview,
     setActiveCourseWeek,
     setPortfolioRole,
@@ -3183,7 +3762,9 @@ function App() {
     togglePortfolioChecklist,
     toggleProgress,
     toggleQuestionMastered,
-    updatePortfolioStory,
+    updateBehavioralStoryDraft,
+    updateBehavioralStoryFollowUp,
+    updateResumeOptimizer,
   } = useLocalProgress()
   const selectedResource = resourceSlug ? resourcesBySlug[resourceSlug] : null
   const selectedProject = projectSlug ? projectsBySlug[projectSlug] : null
@@ -3238,9 +3819,12 @@ function App() {
         <PortfolioPage
           progress={progress}
           onRecordExport={recordPortfolioExport}
+          onSaveOptimizerOutputs={saveResumeOptimizerOutputs}
           onSelectRole={setPortfolioRole}
           onToggleChecklist={togglePortfolioChecklist}
-          onUpdateStory={updatePortfolioStory}
+          onUpdateFollowUp={updateBehavioralStoryFollowUp}
+          onUpdateOptimizer={updateResumeOptimizer}
+          onUpdateStoryDraft={updateBehavioralStoryDraft}
         />
       ) : projectSlug ? (
         <ProjectDetail project={selectedProject} />
