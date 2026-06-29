@@ -1,8 +1,8 @@
 # openai-interview-roadmap
 
-一个个人学习型静态网页项目，主题是“通往 OpenAI / AI Lab 的学习地图”。
+一个个人学习型静态网页项目，当前定位是“OpenAI / AI Lab 面试训练系统与公开学习作品集”。
 
-页面基于 Alisa Liu 的 OpenAI / AI Lab 求职经验和公开学习资源，整理面向顶级 AI Lab 面试的能力地图、资源清单、Mini GPT 实践项目和 12 周学习计划。
+页面基于 Alisa Liu 的 OpenAI / AI Lab 求职经验和公开学习资源，整理面向顶级 AI Lab / GenAI Engineer 面试的中文学习系统、Mini GPT 实践项目、训练工具、复盘导出和作品集生成路径。
 
 ## V2：站内中文学习系统
 
@@ -213,14 +213,42 @@ V7C 把 Portfolio 页中的 Behavioral Stories 区升级为“面试故事库深
 - Behavioral Stories Markdown 和完整 Portfolio Packet Markdown 已增强，会包含 STAR 字段、完整度、三种讲法、追问回答和风险提醒。
 - 继续使用 `openai-roadmap-progress.portfolioDrafts.behavioralStoryDrafts` 保存结构化故事草稿。
 
+## V8A：Learning Log & Weekly Report
+
+V8A 新增 `#/learning-log`，把学习进度、课程任务、Mini GPT 项目进展、面试题训练、Mock Interview、错题复盘和求职材料准备状态整理成可公开发布的学习日志。
+
+新增能力：
+
+- 本周学习日志编辑：记录本周学了什么、实现了什么、最难问题、debug 记录、面试训练、关键收获和下周计划。
+- Milestone 记录：完成资源页、课程周、Mini GPT 模块、Mock Interview、错题复盘、Behavioral story、Portfolio Packet、GitHub commit 和公开学习日志。
+- 周报 Markdown：生成 AI Lab 面试准备周报，汇总课程、资源、项目、题库、Mock Interview、错题复盘和下周计划。
+- 公开学习日志 Markdown：适合发布到 GitHub Discussion、Notion、公众号草稿或博客。
+- X / 社交平台模板：支持 280 字以内短版更新和长版公开更新。
+- 发布 checklist：检查内容是否具体、是否有项目进展、是否包含可验证产出、是否避免夸大、是否有项目链接和下周计划。
+- 最近 5 条历史：每次生成或复制时记录类型、时间、标题和预览。
+- 继续使用 `openai-roadmap-progress.learningLogs` 保存本地日志草稿、milestone、发布 checklist 和历史记录。
+
+## V8B：首页 Showcase 与公开作品集化
+
+V8B 把首页从“学习地图入口”升级为更适合公开展示的项目主页。
+
+新增能力：
+
+- 首页 Hero 改为“OpenAI / AI Lab 面试训练系统”，突出中文学习、项目实践、面试训练与作品集生成。
+- 新增系统能力总览：学习、实践、训练、复盘、课程、求职 6 个模块。
+- 新增学习闭环图：资源学习 → Mini GPT 项目实践 → 面试题训练 → Mock Interview → 错题复盘 → 课程周报 → Portfolio Packet → 公开学习日志。
+- 新增项目成果 Showcase：展示 `openai-interview-roadmap` 和 `mini-gpt-from-scratch` 两个公开项目及链接。
+- 新增适合人群、当前版本能力和快速开始区块，帮助首次访问者快速理解项目价值与使用路径。
+- 旧的学习资源、能力地图、实践项目和 12 周计划继续保留在首页下方。
+
 ## Related Projects
 
 - `mini-gpt-from-scratch`：真实 Python + PyTorch Mini GPT 代码作品集，https://github.com/conanxin/mini-gpt-from-scratch
-- `openai-interview-roadmap`：当前学习站与 AI Lab 面试准备路线图，https://github.com/conanxin/openai-interview-roadmap
+- `openai-interview-roadmap`：当前 AI Lab 面试训练系统与公开学习作品集，https://github.com/conanxin/openai-interview-roadmap
 
 后续计划：
 
-- V8：公开学习日志与周报模板
+- V8C：首页截图与 README 展示优化
 - V9：英文站点版本
 - V10：真实求职投递追踪器
 
@@ -231,7 +259,7 @@ V7C 把 Portfolio 页中的 Behavioral Stories 区升级为“面试故事库深
 - 建立技术讨论能力：实验设计、parallelism、post-training、PPO vs GRPO。
 - 建立面试表达能力：research discussion、job talk、behavioral stories。
 
-这个页面不是 offer 保证，而是一张个人学习和面试准备路线图。
+这个页面不是 offer 保证，而是一套个人学习、面试训练、项目展示和求职材料输出系统。
 
 ## 本地运行
 

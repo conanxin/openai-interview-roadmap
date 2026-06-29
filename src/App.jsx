@@ -14,6 +14,13 @@ import {
   resourcesProgressItems,
   weeklyPlanItems,
 } from './data/progress'
+import {
+  learningMilestoneTemplates,
+  publicLogTemplates,
+  publishChecklistItems,
+  suggestedLogSections,
+  weeklyReportTemplates,
+} from './data/learningLog'
 import { mockInterviewModes, mockReviewPrompts } from './data/mockInterview'
 import {
   behavioralStoryTemplates,
@@ -30,9 +37,31 @@ import {
 import { projectsBySlug } from './data/projects'
 import { interviewQuestions, questionCategories } from './data/questions'
 import { resources, resourcesBySlug } from './data/resources'
+import {
+  audienceCards,
+  learningLoopSteps,
+  projectShowcaseItems,
+  quickStartSteps,
+  showcaseExternalLinks,
+  showcaseHeroActions,
+  systemCapabilityCards,
+  versionCapabilityItems,
+} from './data/showcase'
 import './App.css'
 
 const STORAGE_KEY = 'openai-roadmap-progress'
+
+const emptyLearningLogDraft = Object.fromEntries(
+  suggestedLogSections.map((section) => [section.id, '']),
+)
+
+const emptyLearningLogs = {
+  currentDraft: emptyLearningLogDraft,
+  milestones: {},
+  publishChecklist: {},
+  history: [],
+  lastExportedAt: null,
+}
 
 const emptyResumeOptimizer = {
   role: 'research-engineer',
@@ -67,6 +96,7 @@ const emptyProgress = {
   courseTasks: {},
   activeCourseWeek: null,
   portfolioDrafts: emptyPortfolioDrafts,
+  learningLogs: emptyLearningLogs,
 }
 
 const navItems = [
@@ -110,7 +140,7 @@ function getRouteFromHash() {
   const resourceMatch = window.location.hash.match(/^#\/resources\/([^/?#]+)/)
   const projectMatch = window.location.hash.match(/^#\/projects\/([^/?#]+)/)
   const courseWeekMatch = window.location.hash.match(/^#\/course\/week\/(\d{1,2})(?:[/?#]|$)/)
-  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank|mock-interview|review|course|portfolio)(?:[/?#]|$)/)
+  const pageMatch = window.location.hash.match(/^#\/(dashboard|interview-bank|mock-interview|review|course|portfolio|learning-log)(?:[/?#]|$)/)
 
   return {
     resourceSlug: resourceMatch ? decodeURIComponent(resourceMatch[1]) : null,
@@ -137,6 +167,7 @@ function useHashRoute() {
 
 function normalizeProgress(value = {}) {
   const portfolioDrafts = value.portfolioDrafts || {}
+  const learningLogs = value.learningLogs || {}
 
   return {
     ...emptyProgress,
@@ -160,6 +191,23 @@ function normalizeProgress(value = {}) {
         ...emptyPortfolioDrafts.interviewChecklist,
         ...portfolioDrafts.interviewChecklist,
       },
+    },
+    learningLogs: {
+      ...emptyLearningLogs,
+      ...learningLogs,
+      currentDraft: {
+        ...emptyLearningLogDraft,
+        ...learningLogs.currentDraft,
+      },
+      milestones: {
+        ...emptyLearningLogs.milestones,
+        ...learningLogs.milestones,
+      },
+      publishChecklist: {
+        ...emptyLearningLogs.publishChecklist,
+        ...learningLogs.publishChecklist,
+      },
+      history: Array.isArray(learningLogs.history) ? learningLogs.history : [],
     },
   }
 }
@@ -348,6 +396,62 @@ function useLocalProgress() {
     }))
   }
 
+  const updateLearningLogDraft = (field, value) => {
+    setProgress((current) => ({
+      ...current,
+      learningLogs: {
+        ...current.learningLogs,
+        currentDraft: {
+          ...current.learningLogs.currentDraft,
+          [field]: value,
+        },
+      },
+    }))
+  }
+
+  const toggleLearningLogMilestone = (id, checked) => {
+    setProgress((current) => ({
+      ...current,
+      learningLogs: {
+        ...current.learningLogs,
+        milestones: {
+          ...current.learningLogs.milestones,
+          [id]: checked,
+        },
+      },
+    }))
+  }
+
+  const toggleLearningLogPublishChecklist = (id, checked) => {
+    setProgress((current) => ({
+      ...current,
+      learningLogs: {
+        ...current.learningLogs,
+        publishChecklist: {
+          ...current.learningLogs.publishChecklist,
+          [id]: checked,
+        },
+      },
+    }))
+  }
+
+  const recordLearningLogExport = (entry) => {
+    setProgress((current) => ({
+      ...current,
+      learningLogs: {
+        ...current.learningLogs,
+        lastExportedAt: new Date().toISOString(),
+        history: [
+          {
+            ...entry,
+            createdAt: new Date().toISOString(),
+          },
+          ...current.learningLogs.history,
+        ].slice(0, 5),
+      },
+    }))
+  }
+
   return {
     progress,
     recordExport,
@@ -361,6 +465,10 @@ function useLocalProgress() {
     togglePortfolioChecklist,
     toggleProgress,
     toggleQuestionMastered,
+    updateLearningLogDraft,
+    toggleLearningLogMilestone,
+    toggleLearningLogPublishChecklist,
+    recordLearningLogExport,
     updateBehavioralStoryDraft,
     updateBehavioralStoryFollowUp,
     updateResumeOptimizer,
@@ -1363,6 +1471,221 @@ function buildPortfolioPacketMarkdown(drafts) {
   ].join('\n')
 }
 
+function getCompletedLabels(items, bucket, labelField = 'title') {
+  return items.filter((item) => bucket[item.id]).map((item) => item[labelField])
+}
+
+function getCompletedCourseTaskLabels(progress) {
+  return courseWeeks.flatMap((week) => (
+    week.tasks
+      .filter((task) => progress.courseTasks[task.id])
+      .map((task) => `${week.title}：${task.label}`)
+  ))
+}
+
+function getLearningLogSummary(progress) {
+  const suggestedWeek = getSuggestedCourseWeek(progress)
+  const currentWeekLabel = progress.activeCourseWeek
+    ? `第 ${progress.activeCourseWeek} 周`
+    : suggestedWeek
+      ? `建议第 ${suggestedWeek.weekNumber} 周`
+      : '已完成全部 12 周'
+  const completedCourseTasks = getCompletedCourseTaskCount(progress)
+  const completedResources = countCompleted(resourcesProgressItems, progress.resourceCompletion)
+  const completedMiniGpt = countCompleted(miniGptProgressItems, progress.miniGptCompletion)
+  const practicedQuestions = countCompleted(interviewQuestions, progress.questionPracticed)
+  const masteredQuestions = countCompleted(interviewQuestions, progress.questionMastered)
+  const completedPortfolioChecklist = countCompleted(interviewChecklistItems, progress.portfolioDrafts.interviewChecklist)
+  const readyStories = getReadyStoryCount(progress.portfolioDrafts)
+  const lastMock = progress.lastMockInterview
+
+  return {
+    currentWeekLabel,
+    completedCourseTasks,
+    completedResources,
+    completedMiniGpt,
+    practicedQuestions,
+    masteredQuestions,
+    completedPortfolioChecklist,
+    readyStories,
+    mockStatus: lastMock
+      ? `${getMockModeName(lastMock.mode)}，${lastMock.questionIds.length} 题，完成于 ${formatDateTime(lastMock.completedAt)}`
+      : '尚未完成 Mock Interview',
+    reviewStatus: progress.lastExportedAt ? `最近一次复盘导出：${formatDateTime(progress.lastExportedAt)}` : '尚未导出错题复盘',
+    portfolioStatus: progress.portfolioDrafts.lastPortfolioExportedAt
+      ? `最近一次 Portfolio 导出：${formatDateTime(progress.portfolioDrafts.lastPortfolioExportedAt)}`
+      : '尚未导出 Portfolio Packet',
+  }
+}
+
+function getLearningLogCompletedSections(progress) {
+  return {
+    resources: getCompletedLabels(resourcesProgressItems, progress.resourceCompletion),
+    miniGpt: getCompletedLabels(miniGptProgressItems, progress.miniGptCompletion),
+    courseTasks: getCompletedCourseTaskLabels(progress),
+    milestones: learningMilestoneTemplates
+      .filter((item) => progress.learningLogs.milestones[item.id])
+      .map((item) => item.label),
+  }
+}
+
+function draftLine(draft, field, fallback = '待填写') {
+  return draft[field]?.trim() || fallback
+}
+
+function listOrEmpty(items) {
+  return items.length > 0 ? items.map((item) => `- ${item}`) : ['- 暂无']
+}
+
+function buildWeeklyLearningReportMarkdown(progress) {
+  const summary = getLearningLogSummary(progress)
+  const completed = getLearningLogCompletedSections(progress)
+  const draft = progress.learningLogs.currentDraft
+
+  return [
+    '# AI Lab 面试准备周报',
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    '',
+    '## 本周概览',
+    `- 当前课程周：${summary.currentWeekLabel}`,
+    `- 课程任务完成情况：${summary.completedCourseTasks} / ${courseTaskCount}`,
+    `- 资源学习情况：${summary.completedResources} / ${resourcesProgressItems.length}`,
+    `- Mini GPT 项目进展：${summary.completedMiniGpt} / ${miniGptProgressItems.length}`,
+    `- 面试题训练情况：已练习 ${summary.practicedQuestions} / ${interviewQuestions.length}，已掌握 ${summary.masteredQuestions} / ${interviewQuestions.length}`,
+    `- Mock Interview 情况：${summary.mockStatus}`,
+    '',
+    '## 本周完成',
+    ...listOrEmpty(completed.milestones),
+    '',
+    '## 本周学习内容',
+    `- 本周学了什么：${draftLine(draft, 'learned')}`,
+    '- 学了哪些资源页：',
+    ...listOrEmpty(completed.resources).map((line) => `  ${line}`),
+    '- 完成了哪些课程任务：',
+    ...listOrEmpty(completed.courseTasks).map((line) => `  ${line}`),
+    '',
+    '## 本周项目进展',
+    `- 本周实现了什么：${draftLine(draft, 'built')}`,
+    '- Mini GPT 相关进展：',
+    ...listOrEmpty(completed.miniGpt).map((line) => `  ${line}`),
+    '- openai-interview-roadmap 相关进展：',
+    `  - ${draftLine(draft, 'built')}`,
+    '',
+    '## 本周面试训练',
+    `- 练习题数量：${summary.practicedQuestions}`,
+    `- 掌握题数量：${summary.masteredQuestions}`,
+    `- Mock Interview 结果：${summary.mockStatus}`,
+    `- 错题复盘情况：${summary.reviewStatus}`,
+    '',
+    '## 本周卡点',
+    `- 最难概念：${draftLine(draft, 'hardestProblem')}`,
+    `- 最难代码 / debug：${draftLine(draft, 'debugNotes')}`,
+    `- 最不熟面试问题：${draftLine(draft, 'interviewPractice')}`,
+    '',
+    '## 本周最重要的收获',
+    draftLine(draft, 'keyTakeaway'),
+    '',
+    '## 下周计划',
+    `- 课程任务：${draftLine(draft, 'nextPlan')}`,
+    '- 项目任务：继续推进 Mini GPT / Roadmap 可展示产物。',
+    '- 面试训练：继续做题库、Mock Interview 和错题复盘。',
+    '- 求职材料：继续完善 Portfolio Packet、resume bullets 和 behavioral stories。',
+    '',
+    '## 公开链接',
+    '- Roadmap: https://conanxin.github.io/openai-interview-roadmap/',
+    '- Mini GPT: https://github.com/conanxin/mini-gpt-from-scratch',
+  ].join('\n')
+}
+
+function buildPublicLearningLogMarkdown(progress) {
+  const summary = getLearningLogSummary(progress)
+  const draft = progress.learningLogs.currentDraft
+
+  return [
+    '# 我正在用 12 周准备 AI Lab 面试',
+    '',
+    `生成时间：${formatDateTime(new Date().toISOString())}`,
+    '',
+    '## 为什么做这件事',
+    '我想把 AI Lab / OpenAI 面试准备从“看资源”和“刷题”变成一条可追踪、可复盘、可展示的学习路径。',
+    '',
+    '## 这周我学了什么',
+    draftLine(draft, 'learned'),
+    '',
+    '## 这周我实现了什么',
+    draftLine(draft, 'built'),
+    '',
+    '## 我遇到的困难',
+    draftLine(draft, 'hardestProblem'),
+    '',
+    '## 我如何解决',
+    draftLine(draft, 'debugNotes'),
+    '',
+    '## 面试训练和复盘',
+    `${draftLine(draft, 'interviewPractice')} 当前题库练习：${summary.practicedQuestions} 题，掌握：${summary.masteredQuestions} 题。`,
+    '',
+    '## 下周继续做什么',
+    draftLine(draft, 'nextPlan'),
+    '',
+    '## 项目链接',
+    '- Roadmap: https://conanxin.github.io/openai-interview-roadmap/',
+    '- Mini GPT: https://github.com/conanxin/mini-gpt-from-scratch',
+  ].join('\n')
+}
+
+function truncateText(text, maxLength) {
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text
+}
+
+function buildSocialShortUpdate(progress) {
+  const summary = getLearningLogSummary(progress)
+  const draft = progress.learningLogs.currentDraft
+  const text = [
+    `这周继续推进 AI Lab 面试 12 周计划：${summary.currentWeekLabel}。`,
+    `学习：${draftLine(draft, 'learned', '补 LLM / Transformer / 面试主线')}`,
+    `产出：${draftLine(draft, 'built', '推进学习站和 Mini GPT 项目')}`,
+    `卡点：${draftLine(draft, 'hardestProblem', '继续复盘概念和代码实现')}`,
+    'Roadmap: https://conanxin.github.io/openai-interview-roadmap/',
+  ].join('\n')
+
+  return truncateText(text, 280)
+}
+
+function buildSocialLongUpdate(progress) {
+  const summary = getLearningLogSummary(progress)
+  const draft = progress.learningLogs.currentDraft
+
+  return [
+    '我正在把 AI Lab / OpenAI 面试准备做成一个 12 周公开学习项目。',
+    '',
+    `本周进度：${summary.currentWeekLabel}，课程任务 ${summary.completedCourseTasks} / ${courseTaskCount}，题库已练习 ${summary.practicedQuestions} 题。`,
+    '',
+    `这周学了：${draftLine(draft, 'learned')}`,
+    '',
+    `这周实现了：${draftLine(draft, 'built')}`,
+    '',
+    `最难的问题：${draftLine(draft, 'hardestProblem')}`,
+    '',
+    `我的处理方式：${draftLine(draft, 'debugNotes')}`,
+    '',
+    `下周计划：${draftLine(draft, 'nextPlan')}`,
+    '',
+    '项目链接：',
+    'Roadmap: https://conanxin.github.io/openai-interview-roadmap/',
+    'Mini GPT: https://github.com/conanxin/mini-gpt-from-scratch',
+  ].join('\n')
+}
+
+function getLearningLogMarkdownByType(progress) {
+  return {
+    weekly: buildWeeklyLearningReportMarkdown(progress),
+    public: buildPublicLearningLogMarkdown(progress),
+    socialShort: buildSocialShortUpdate(progress),
+    socialLong: buildSocialLongUpdate(progress),
+  }
+}
+
 function ProgressCheckbox({ checked, label, onChange }) {
   return (
     <label className={checked ? 'progress-checkbox is-checked' : 'progress-checkbox'}>
@@ -1473,6 +1796,9 @@ function DashboardPage({ progress, onToggle, onReset }) {
           </a>
           <a className="button secondary" href="#/portfolio">
             打开 Portfolio Toolkit
+          </a>
+          <a className="button secondary" href="#/learning-log">
+            生成本周学习日志
           </a>
           <a className="button secondary" href="#/review">
             查看错题复盘
@@ -2524,6 +2850,9 @@ function PortfolioPage({
           <a className="button secondary" href="#portfolio-export">
             导出求职材料 Markdown
           </a>
+          <a className="button secondary" href="#/learning-log">
+            生成公开作品集更新
+          </a>
         </div>
       </section>
 
@@ -2572,6 +2901,208 @@ function PortfolioPage({
           <div className="review-summary-note portfolio-export-note">
             <p>最近一次 Portfolio 导出时间：{formatDateTime(drafts.lastPortfolioExportedAt)}</p>
           </div>
+        </DetailSection>
+      </div>
+    </main>
+  )
+}
+
+function LearningLogOverview({ progress }) {
+  const summary = getLearningLogSummary(progress)
+
+  return (
+    <div className="dashboard-stat-grid learning-log-stat-grid">
+      <DashboardStat label="当前课程周" value={summary.currentWeekLabel} />
+      <DashboardStat label="课程任务" value={`${summary.completedCourseTasks} / ${courseTaskCount}`} />
+      <DashboardStat label="资源页" value={`${summary.completedResources} / ${resourcesProgressItems.length}`} />
+      <DashboardStat label="Mini GPT 模块" value={`${summary.completedMiniGpt} / ${miniGptProgressItems.length}`} />
+      <DashboardStat label="已练习题目" value={`${summary.practicedQuestions} / ${interviewQuestions.length}`} />
+      <DashboardStat label="已掌握题目" value={`${summary.masteredQuestions} / ${interviewQuestions.length}`} />
+      <DashboardStat label="Portfolio checklist" value={`${summary.completedPortfolioChecklist} / ${interviewChecklistItems.length}`} />
+      <DashboardStat label="完整故事" value={`${summary.readyStories} / ${behavioralStoryTemplates.length}`} />
+    </div>
+  )
+}
+
+function LearningLogDraftEditor({ draft, onUpdateDraft }) {
+  return (
+    <div className="learning-log-editor-grid">
+      {suggestedLogSections.map((section) => (
+        <label className="learning-log-field" key={section.id}>
+          <span>{section.label}</span>
+          <textarea
+            value={draft[section.id] || ''}
+            placeholder={section.placeholder}
+            onChange={(event) => onUpdateDraft(section.id, event.target.value)}
+          />
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function LearningLogChecklist({ items, progress, onToggle }) {
+  return (
+    <div className="portfolio-checklist learning-log-checklist">
+      {items.map((item) => (
+        <label className={progress[item.id] ? 'portfolio-check-item is-complete' : 'portfolio-check-item'} key={item.id}>
+          <input
+            type="checkbox"
+            checked={Boolean(progress[item.id])}
+            onChange={(event) => onToggle(item.id, event.target.checked)}
+          />
+          <span>{item.label}</span>
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function LearningLogHistory({ history }) {
+  return (
+    <div className="learning-log-history">
+      {history.length > 0 ? (
+        history.map((entry) => (
+          <article className="learning-log-history-card" key={`${entry.createdAt}-${entry.type}`}>
+            <div>
+              <span>{entry.type}</span>
+              <strong>{entry.title}</strong>
+            </div>
+            <p>{formatDateTime(entry.createdAt)}</p>
+            <pre>{entry.markdownPreview}</pre>
+          </article>
+        ))
+      ) : (
+        <p className="empty-history-note">还没有导出记录。生成或复制一次周报后，这里会保留最近 5 条。</p>
+      )}
+    </div>
+  )
+}
+
+function LearningLogPage({
+  progress,
+  onRecordExport,
+  onToggleMilestone,
+  onTogglePublishChecklist,
+  onUpdateDraft,
+}) {
+  const [exportType, setExportType] = useState('weekly')
+  const [copyStatus, setCopyStatus] = useState('')
+  const markdownByType = getLearningLogMarkdownByType(progress)
+  const selectedMarkdown = markdownByType[exportType]
+  const exportOptions = [
+    { id: 'weekly', label: weeklyReportTemplates[0].label, title: weeklyReportTemplates[0].title },
+    { id: 'public', label: publicLogTemplates[0].label, title: publicLogTemplates[0].title },
+    { id: 'socialShort', label: publicLogTemplates[1].label, title: publicLogTemplates[1].title },
+    { id: 'socialLong', label: publicLogTemplates[2].label, title: publicLogTemplates[2].title },
+  ]
+  const selectedOption = exportOptions.find((option) => option.id === exportType) || exportOptions[0]
+  const summary = getLearningLogSummary(progress)
+
+  const recordHistory = (type = exportType, markdown = selectedMarkdown) => {
+    const option = exportOptions.find((item) => item.id === type) || selectedOption
+    onRecordExport({
+      type: option.label,
+      title: option.title,
+      markdownPreview: truncateText(markdown.replace(/\s+/g, ' ').trim(), 220),
+    })
+  }
+
+  const selectExportType = (type) => {
+    setExportType(type)
+    setCopyStatus('已生成，可复制或手动选中文本')
+    recordHistory(type, markdownByType[type])
+  }
+
+  const copyMarkdown = async () => {
+    recordHistory()
+    if (!navigator.clipboard?.writeText) {
+      setCopyStatus('已生成，可手动复制')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(selectedMarkdown)
+      setCopyStatus('已复制')
+    } catch {
+      setCopyStatus('复制失败，可手动复制')
+    }
+  }
+
+  return (
+    <main className="detail-page learning-log-page">
+      <a className="back-link" href="#top">
+        返回首页
+      </a>
+      <section className="detail-hero">
+        <p>V8A Learning Log</p>
+        <h1>Learning Log & Weekly Report</h1>
+        <span>记录每周学习、项目推进、面试训练和复盘结果，把准备过程变成公开作品集。</span>
+        <div className="detail-actions">
+          <button className="button primary" type="button" onClick={() => {
+            selectExportType('weekly')
+            scrollToDetailSection('learning-log-export')
+          }}>
+            生成本周周报
+          </button>
+          <button className="button secondary" type="button" onClick={() => {
+            selectExportType('public')
+            scrollToDetailSection('learning-log-export')
+          }}>
+            生成公开学习日志
+          </button>
+          <button className="button secondary" type="button" onClick={() => {
+            selectExportType('socialShort')
+            scrollToDetailSection('learning-log-export')
+          }}>
+            生成 X / GitHub 更新
+          </button>
+          <button className="button secondary" type="button" onClick={() => scrollToDetailSection('learning-log-publish-checklist')}>
+            查看发布 checklist
+          </button>
+        </div>
+      </section>
+
+      <div className="project-detail-content">
+        <DetailSection id="learning-log-overview" title="学习状态总览">
+          <LearningLogOverview progress={progress} />
+          <div className="review-summary-note">
+            <p>最近一次 Mock Interview：{summary.mockStatus}</p>
+            <p>{summary.reviewStatus}</p>
+            <p>{summary.portfolioStatus}</p>
+            <p>最近一次学习日志导出：{formatDateTime(progress.learningLogs.lastExportedAt)}</p>
+          </div>
+        </DetailSection>
+
+        <DetailSection id="learning-log-draft" title="本周日志编辑区">
+          <LearningLogDraftEditor draft={progress.learningLogs.currentDraft} onUpdateDraft={onUpdateDraft} />
+        </DetailSection>
+
+        <DetailSection id="learning-log-milestones" title="Milestone 选择区">
+          <LearningLogChecklist items={learningMilestoneTemplates} progress={progress.learningLogs.milestones} onToggle={onToggleMilestone} />
+        </DetailSection>
+
+        <DetailSection id="learning-log-export" title="Markdown / 社交平台导出">
+          <MarkdownExportPanel
+            markdown={selectedMarkdown}
+            options={exportOptions}
+            selectedType={exportType}
+            status={copyStatus}
+            onCopy={copyMarkdown}
+            onSelect={selectExportType}
+          />
+        </DetailSection>
+
+        <DetailSection id="learning-log-publish-checklist" title="发布 checklist">
+          <LearningLogChecklist
+            items={publishChecklistItems}
+            progress={progress.learningLogs.publishChecklist}
+            onToggle={onTogglePublishChecklist}
+          />
+        </DetailSection>
+
+        <DetailSection id="learning-log-history" title="最近 5 条历史日志">
+          <LearningLogHistory history={progress.learningLogs.history} />
         </DetailSection>
       </div>
     </main>
@@ -2631,6 +3162,9 @@ function ReviewPage({ progress, onRecordExport, onToggleMastered }) {
           <a className="button secondary" href="#/mock-interview">
             开始模拟面试
           </a>
+          <a className="button secondary" href="#/learning-log">
+            导出公开学习复盘
+          </a>
         </div>
       </section>
 
@@ -2669,6 +3203,7 @@ function ReviewPage({ progress, onRecordExport, onToggleMastered }) {
           <p>Portfolio Output</p>
           <h2>完成复盘后，可以把训练记录、项目内容和故事库整理成求职材料。</h2>
           <a href="#/portfolio">生成求职材料</a>
+          <a href="#/learning-log">导出公开学习复盘</a>
         </section>
       </div>
     </main>
@@ -2703,6 +3238,9 @@ function CourseOverview({ progress }) {
         </a>
         <a className="button secondary" href="#/review?export=course">
           生成课程总报告
+        </a>
+        <a className="button secondary" href="#/learning-log">
+          写本周周报
         </a>
       </div>
     </DetailSection>
@@ -2845,6 +3383,9 @@ function CoursePage({ progress, onSetActiveWeek, onToggleTask }) {
           <a className="button secondary" href="#/portfolio">
             生成求职材料
           </a>
+          <a className="button secondary" href="#/learning-log">
+            写本周周报
+          </a>
         </div>
       </section>
 
@@ -2856,6 +3397,7 @@ function CoursePage({ progress, onSetActiveWeek, onToggleTask }) {
           <h2>完成每周学习后，建议前往错题复盘页导出学习进度 Markdown。</h2>
           <a href="#/review">导出复盘请前往 #/review</a>
           <a href="#/portfolio">生成求职材料</a>
+          <a href="#/learning-log">写本周周报</a>
         </section>
       </div>
     </main>
@@ -3408,56 +3950,198 @@ function CourseEntrySection() {
   )
 }
 
+function HomeHero() {
+  return (
+    <section className="hero-section showcase-hero">
+      <div className="hero-content">
+        <h1>OpenAI / AI Lab 面试训练系统</h1>
+        <p>
+          一个面向 AI Lab / GenAI Engineer 求职准备的中文学习、项目实践、面试训练与作品集生成系统。
+        </p>
+        <div className="hero-actions">
+          {showcaseHeroActions.map((action) => (
+            <a className={`button ${action.variant}`} href={action.href} key={action.href}>
+              {action.label}
+            </a>
+          ))}
+        </div>
+        <div className="hero-external-actions" aria-label="公开项目链接">
+          {showcaseExternalLinks.map((link) => (
+            <a className="button external" href={link.href} key={link.href} target="_blank" rel="noreferrer">
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </div>
+      <div className="hero-visual showcase-hero-visual">
+        <img src={roadmapHero} alt="OpenAI / AI Lab 面试训练系统学习路径插图" />
+      </div>
+    </section>
+  )
+}
+
+function SystemCapabilityShowcase() {
+  return (
+    <section className="section showcase-section" id="system-overview">
+      <SectionHeading
+        eyebrow="System Overview"
+        title="一个完整的 AI Lab 面试准备闭环"
+        description="从学习、实践、训练到复盘和求职材料输出，把分散准备变成可执行系统。"
+      />
+      <div className="showcase-card-grid">
+        {systemCapabilityCards.map((card) => (
+          <article className="showcase-card" key={card.title}>
+            <h3>{card.title}</h3>
+            <p>{card.description}</p>
+            <a className="resource-link primary-link" href={card.href}>
+              {card.action}
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function LearningLoopShowcase() {
+  return (
+    <section className="section showcase-section" id="learning-loop">
+      <SectionHeading
+        eyebrow="Learning Loop"
+        title="学习闭环图"
+        description="每一步都能跳到站内对应工具页：学、做、练、复盘、沉淀，再转化为公开作品集。"
+      />
+      <div className="learning-loop" aria-label="学习闭环流程">
+        {learningLoopSteps.map((step, index) => (
+          <div className="learning-loop-step" key={step.title}>
+            <a href={step.href}>{step.title}</a>
+            {index < learningLoopSteps.length - 1 ? <span aria-hidden="true">→</span> : null}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ProjectShowcaseSection() {
+  return (
+    <section className="section showcase-section" id="project-showcase">
+      <SectionHeading
+        eyebrow="Project Showcase"
+        title="项目成果 Showcase"
+        description="这个站点本身是面试训练系统，Mini GPT 仓库则是代码实现作品集。两者共同展示学习、工程和表达能力。"
+      />
+      <div className="project-showcase-grid">
+        {projectShowcaseItems.map((project) => (
+          <article className="project-showcase-card" key={project.name}>
+            <div>
+              <p className="stage">{project.positioning}</p>
+              <h3>{project.name}</h3>
+            </div>
+            <ul>
+              {project.highlights.map((highlight) => (
+                <li key={highlight}>{highlight}</li>
+              ))}
+            </ul>
+            <div className="resource-actions">
+              {project.links.map((link, index) => (
+                <a
+                  className={index === 0 ? 'resource-link primary-link' : 'resource-link secondary-link'}
+                  href={link.href}
+                  key={link.href}
+                  target={link.external ? '_blank' : undefined}
+                  rel={link.external ? 'noreferrer' : undefined}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function AudienceShowcase() {
+  return (
+    <section className="section showcase-section" id="audience">
+      <SectionHeading
+        eyebrow="Audience"
+        title="适合谁使用？"
+        description="这不是单纯资源收藏页，而是为不同 AI / GenAI 岗位准备的学习与表达系统。"
+      />
+      <div className="audience-grid">
+        {audienceCards.map((card) => (
+          <article className="audience-card" key={card.title}>
+            <h3>{card.title}</h3>
+            <p>{card.description}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function VersionCapabilitySection() {
+  return (
+    <section className="section showcase-section" id="version-capabilities">
+      <SectionHeading
+        eyebrow="Current Version"
+        title="当前版本能力"
+        description="从资源学习到作品集输出，当前版本已经覆盖一个完整的 AI Lab 面试准备工作流。"
+      />
+      <div className="version-capability-list">
+        {versionCapabilityItems.map((item) => (
+          <div className="version-capability-item" key={item}>
+            {item}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function QuickStartSection() {
+  return (
+    <section className="section showcase-section quick-start-section" id="quick-start">
+      <SectionHeading
+        eyebrow="Quick Start"
+        title="如何开始？"
+        description="如果第一次访问，可以按这个顺序把站内页面串成一条学习路径。"
+      />
+      <div className="quick-start-list">
+        {quickStartSteps.map((step, index) => (
+          <article className="quick-start-step" key={step}>
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <p>{step}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function HomePage() {
   return (
     <main>
-      <section className="hero-section">
-        <div className="hero-content">
-          <h1>通往 OpenAI / AI Lab 的学习地图</h1>
-          <p>
-            基于 Alisa Liu 求职经验整理：从语言模型基础、Transformer 实现、ML
-            Coding 到 Research Discussion 的系统学习路径
-          </p>
-          <div className="hero-actions">
-            <a className="button primary" href="#plan">
-              开始学习
-            </a>
-            <a className="button secondary" href="#resources">
-              查看资源地图
-            </a>
-            <a className="button secondary" href="#/dashboard">
-              学习进度
-            </a>
-            <a className="button secondary" href="#/interview-bank">
-              面试题库
-            </a>
-            <a className="button secondary" href="#/mock-interview">
-              开始模拟面试
-            </a>
-            <a className="button secondary" href="#/review">
-              错题复盘
-            </a>
-            <a className="button secondary" href="#/course">
-              进入 12 周课程
-            </a>
-            <a className="button secondary" href="#/portfolio">
-              作品集工具
-            </a>
-          </div>
-        </div>
-        <div className="hero-visual">
-          <img src={roadmapHero} alt="通往 AI Lab 的学习阶梯插图" />
-        </div>
-      </section>
+      <HomeHero />
+
+      <SystemCapabilityShowcase />
+      <LearningLoopShowcase />
+      <ProjectShowcaseSection />
+      <AudienceShowcase />
+      <VersionCapabilitySection />
+      <QuickStartSection />
 
       <section className="intro-section" aria-labelledby="intro-title">
         <div>
           <p className="section-kicker">Project Note</p>
-          <h2 id="intro-title">这不是 offer 保证，而是一张系统学习路线图</h2>
+          <h2 id="intro-title">这不是 offer 保证，而是一套系统化面试训练与作品集路线</h2>
         </div>
         <p>
           页面目标是帮助学习者建立 LLM 底层理解、代码实现能力、技术讨论能力和面试表达能力。
-          V2 新增站内中文学习页，让资源不只是外链，而是可持续扩展的学习系统。
+          它把站内中文学习、Mini GPT 实践、题库训练、模拟面试、复盘导出和求职材料生成串成闭环。
         </p>
       </section>
 
@@ -3759,9 +4443,13 @@ function App() {
     setActiveCourseWeek,
     setPortfolioRole,
     toggleCourseTask,
+    toggleLearningLogMilestone,
+    toggleLearningLogPublishChecklist,
     togglePortfolioChecklist,
     toggleProgress,
     toggleQuestionMastered,
+    updateLearningLogDraft,
+    recordLearningLogExport,
     updateBehavioralStoryDraft,
     updateBehavioralStoryFollowUp,
     updateResumeOptimizer,
@@ -3825,6 +4513,14 @@ function App() {
           onUpdateFollowUp={updateBehavioralStoryFollowUp}
           onUpdateOptimizer={updateResumeOptimizer}
           onUpdateStoryDraft={updateBehavioralStoryDraft}
+        />
+      ) : page === 'learning-log' ? (
+        <LearningLogPage
+          progress={progress}
+          onRecordExport={recordLearningLogExport}
+          onToggleMilestone={toggleLearningLogMilestone}
+          onTogglePublishChecklist={toggleLearningLogPublishChecklist}
+          onUpdateDraft={updateLearningLogDraft}
         />
       ) : projectSlug ? (
         <ProjectDetail project={selectedProject} />
